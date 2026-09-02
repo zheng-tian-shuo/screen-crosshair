@@ -1,0 +1,205 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace ScreenCrosshair
+{
+    public partial class MainForm
+    {
+        // 五条热键（显隐 / 切预设 / 三个倒计时）现在全在这一页，每行一套控件。
+        // 下标就是 AppSettings.HotToggle…HotFree，别单独排序。
+        private Label[] _hkName;
+        private Chk[] _hkCtrl, _hkAlt, _hkShift;
+        private ComboBox[] _hkKey;
+        private FlatBtn[] _hkOn;
+        private Label _lblHotState;
+        private Chk _chkAuto;
+        private TextBox _tbGameExe;
+        private FlatBtn _btnGrab;
+        private Timer _grabTimer;
+        private int _grabLeft;
+
+        private void BuildPageHotkeys()
+        {
+            Panel pg = _pages[PageHotkeys];
+
+            Card c1 = NewCard(pg, "全局热键（每条都能单独开关）", 14, 306);
+
+            int n = AppSettings.HotCount;
+            _hkName = new Label[n];
+            _hkCtrl = new Chk[n];
+            _hkAlt = new Chk[n];
+            _hkShift = new Chk[n];
+            _hkKey = new ComboBox[n];
+            _hkOn = new FlatBtn[n];
+
+            for (int i = 0; i < n; i++)
+            {
+                int slot = i;           // 闭包要抓住当前值，直接用 i 的话所有按钮都指向最后一行
+                int y = 44 + i * 34;
+
+                _hkName[i] = Ui.L(c1, AppSettings.HotNames[i], Theme.Body, Theme.TextMuted,
+                    14, y + 2, 104, 20);
+                _hkCtrl[i] = ModChk(c1, "Ctrl", 120, y);
+                _hkAlt[i] = ModChk(c1, "Alt", 174, y);
+                _hkShift[i] = ModChk(c1, "Shift", 222, y);
+                _hkKey[i] = Ui.Combo(c1, 282, y - 3, 94);
+                _hkKey[i].Items.AddRange(KeyTable.Names);
+
+                FlatBtn on = new FlatBtn();
+                on.Font = Theme.Small;
+                on.Bounds = new Rectangle(380, y - 2, 60, 26);
+                on.Click += delegate { ToggleHotEnabled(slot); };
+                c1.Controls.Add(on);
+                _hkOn[i] = on;
+            }
+
+            int by = 44 + n * 34 + 6;
+
+            FlatBtn ap = new FlatBtn();
+            ap.Kind = 1;
+            ap.Text = "应用热键";
+            ap.Bounds = new Rectangle(14, by, 100, 28);
+            ap.Click += delegate { ApplyHotkeys(); };
+            c1.Controls.Add(ap);
+
+            _lblHotState = Ui.L(c1, "", Theme.Small, Theme.TextMuted, 124, by + 4, 316, 20);
+
+            // 两句话手动断行：交给自动换行会把「说明别 / 的程序」这种词切成两截
+            Ui.L(c1, "改完组合键要按「应用热键」；右边的开关按一下立刻生效。\n"
+                    + "显示「被占用」说明这个组合被别的程序抢了，换一个或者把它停用。",
+                Theme.Small, Theme.TextFaint, 14, by + 38, 426, 34);
+
+            // ---- 自动显隐 ----
+            Card c2 = NewCard(pg, "跟着游戏自动显隐", 332, 152);
+
+            _chkAuto = new Chk();
+            _chkAuto.Text = "只在指定程序处于前台时显示准星";
+            _chkAuto.Bounds = new Rectangle(14, 42, 400, 22);
+            _chkAuto.CheckedChanged += UiChanged;
+            c2.Controls.Add(_chkAuto);
+
+            Ui.L(c2, "进程名", Theme.Body, Theme.TextMuted, 14, 78, 54, 20);
+            _tbGameExe = Ui.Box(c2, 70, 76, 160);
+            _tbGameExe.TextChanged += UiChanged;
+            Ui.L(c2, ".exe 可以省略", Theme.Small, Theme.TextFaint, 238, 78, 100, 20);
+
+            _btnGrab = new FlatBtn();
+            _btnGrab.Text = "3 秒后抓取前台程序";
+            _btnGrab.Bounds = new Rectangle(14, 108, 160, 28);
+            _btnGrab.Click += delegate { StartGrab(); };
+            c2.Controls.Add(_btnGrab);
+
+            // 按钮右边只剩 256 px，这句原来写成一行会被卡片右边切掉。给它两行的高度，
+            // 同时和按钮取同一个上下范围 + 垂直居中，免得文字贴着框顶跟按钮错开。
+            Label grabHint = Ui.L(c2, "点一下再切到游戏，倒数结束自动填好。",
+                Theme.Small, Theme.TextFaint, 182, 108, 256, 28);
+            grabHint.TextAlign = ContentAlignment.MiddleLeft;
+        }
+
+        /// <summary>
+        /// 修饰键勾选框。这里不挂 UiChanged：热键的改动要按「应用热键」才生效，
+        /// 顺手触发一次准星的保存流程纯属白费。
+        /// </summary>
+        private Chk ModChk(Card c, string text, int x, int y)
+        {
+            Chk k = new Chk();
+            k.Text = text;
+            // 字体是 pt 单位，高 DPI 下 MeasureText 给的是放大后的宽度，而 Bounds 之后还会被
+            // Form.Scale 再乘一遍。这里先折回 96 DPI 的宽度，不然 150% 缩放时三个勾选框
+            // 会各宽出一半，前一个直接盖住后一个的方框（Ctrl 压着 Alt、Alt 压着 Shift）。
+            int tw = (int)Math.Ceiling(TextRenderer.MeasureText(text, Theme.Body).Width / Theme.K);
+            k.Bounds = new Rectangle(x, y, tw + 26, 22);
+            c.Controls.Add(k);
+            return k;
+        }
+
+        private static uint ModOf(Chk c, Chk a, Chk s)
+        {
+            uint m = 0;
+            if (c.Checked) m |= Native.MOD_CONTROL;
+            if (a.Checked) m |= Native.MOD_ALT;
+            if (s.Checked) m |= Native.MOD_SHIFT;
+            return m;
+        }
+
+        private static void SetMod(uint m, Chk c, Chk a, Chk s)
+        {
+            c.SetSilent((m & Native.MOD_CONTROL) != 0);
+            a.SetSilent((m & Native.MOD_ALT) != 0);
+            s.SetSilent((m & Native.MOD_SHIFT) != 0);
+        }
+
+        private void PushHotkeysToUi()
+        {
+            if (_hkKey == null) return;
+            for (int i = 0; i < AppSettings.HotCount; i++)
+            {
+                SetMod(_cfg.HotMod(i), _hkCtrl[i], _hkAlt[i], _hkShift[i]);
+                _hkKey[i].SelectedIndex = KeyTable.IndexOfVk(_cfg.HotKey(i));
+                SyncHotRow(i);
+            }
+        }
+
+        /// <summary>按启用状态刷新一行的开关按钮和名字颜色</summary>
+        private void SyncHotRow(int i)
+        {
+            if (_hkOn == null || _hkOn[i] == null) return;
+            bool on = _cfg.HotEnabled(i);
+            _hkOn[i].Text = on ? "已启用" : "已停用";
+            _hkOn[i].Kind = on ? 1 : 0;
+            _hkOn[i].Invalidate();
+            _hkName[i].ForeColor = on ? Theme.TextMuted : Theme.TextFaint;
+        }
+
+        /// <summary>停用只是不去 RegisterHotKey，组合键本身留着，重新启用即回来</summary>
+        private void ToggleHotEnabled(int slot)
+        {
+            _cfg.SetHotEnabled(slot, !_cfg.HotEnabled(slot));
+            SyncHotRow(slot);
+            RegisterHotkeys();
+            _cfg.Save();
+            Toast(AppSettings.HotNames[slot] + (_cfg.HotEnabled(slot) ? "：已启用" : "：已停用"));
+        }
+
+        private void ApplyHotkeys()
+        {
+            for (int i = 0; i < AppSettings.HotCount; i++)
+            {
+                uint key = _cfg.HotKey(i);
+                if (_hkKey[i].SelectedIndex >= 0) key = KeyTable.Vks[_hkKey[i].SelectedIndex];
+                _cfg.SetHot(i, ModOf(_hkCtrl[i], _hkAlt[i], _hkShift[i]), key);
+            }
+            RegisterHotkeys();
+            _cfg.Save();
+            Toast("热键已应用");
+        }
+
+        // ---- 倒数抓取前台进程 ----
+        private void StartGrab()
+        {
+            if (_grabTimer == null)
+            {
+                _grabTimer = new Timer();
+                _grabTimer.Interval = 1000;
+                _grabTimer.Tick += GrabTick;
+            }
+            _grabLeft = 3;
+            _btnGrab.Text = "3…";
+            _grabTimer.Start();
+        }
+
+        private void GrabTick(object sender, EventArgs e)
+        {
+            _grabLeft--;
+            if (_grabLeft > 0) { _btnGrab.Text = _grabLeft + "…"; return; }
+            _grabTimer.Stop();
+            _btnGrab.Text = "3 秒后抓取前台程序";
+            string exe = ForegroundExeName();
+            if (exe.Length == 0) { Toast("没抓到，再试一次"); return; }
+            _tbGameExe.Text = exe;
+            _chkAuto.Checked = true;
+            Toast("已填入 " + exe);
+        }
+    }
+}

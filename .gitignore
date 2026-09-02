@@ -1,0 +1,8 @@
+# Local runtime settings and backups
+settings.ini
+settings.ini.bak
+*.log
+*.tmp
+
+# Intermediate build output; run build.ps1 to generate the executable
+ScreenCrosshair.exe
