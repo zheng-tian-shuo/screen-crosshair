@@ -2,7 +2,10 @@
 # 直接双击 build.bat 也是走这个脚本。
 
 $ErrorActionPreference = 'Stop'
-$root = $PSScriptRoot
+$buildDir = $PSScriptRoot
+$root = Split-Path $buildDir -Parent
+$srcDir = Join-Path $root 'src'
+$assetsDir = Join-Path $root 'assets'
 
 $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (-not (Test-Path $csc))
@@ -15,11 +18,11 @@ if (-not (Test-Path $csc))
 }
 
 Write-Host '[1/3] 生成 icon.ico'
-& (Join-Path $root 'make_icon.ps1')
+& (Join-Path $buildDir 'make_icon.ps1')
 
 Write-Host '[2/3] 编译'
-$exe = Join-Path $root 'ScreenCrosshair.exe'
-$src = @(Get-ChildItem -Path $root -Filter '*.cs' | ForEach-Object { $_.FullName })
+$exe = Join-Path $buildDir 'ScreenCrosshair.exe'
+$src = @(Get-ChildItem -Path $srcDir -Filter '*.cs' | ForEach-Object { $_.FullName })
 if ($src.Count -eq 0) { throw '目录里没有 .cs 源文件' }
 
 # /codepage:65001 —— 源码是 UTF-8，不加这个中文字符串会被按 GBK 读成乱码
@@ -31,10 +34,10 @@ $cscArgs = @(
     '/platform:anycpu'
     '/optimize+'
     '/codepage:65001'
-    ('/win32icon:' + (Join-Path $root 'icon.ico'))
-    ('/win32manifest:' + (Join-Path $root 'app.manifest'))
-    ('/resource:' + (Join-Path $root 'brand.png') + ',brand.png')
-    ('/resource:' + (Join-Path $root 'app.ico') + ',app.ico')
+    ('/win32icon:' + (Join-Path $assetsDir 'icon.ico'))
+    ('/win32manifest:' + (Join-Path $buildDir 'app.manifest'))
+    ('/resource:' + (Join-Path $assetsDir 'brand.png') + ',brand.png')
+    ('/resource:' + (Join-Path $assetsDir 'app.ico') + ',app.ico')
     '/r:System.dll'
     '/r:System.Drawing.dll'
     '/r:System.Windows.Forms.dll'

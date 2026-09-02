@@ -5,4 +5,5 @@ settings.ini.bak
 *.tmp
 
 # Intermediate build output; run build.ps1 to generate the executable
+build/ScreenCrosshair.exe
 ScreenCrosshair.exe

@@ -7,11 +7,12 @@
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
-$root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$src = Join-Path $root 'brand_src.jpg'
-$icoPath = Join-Path $root 'icon.ico'
-$appIcoPath = Join-Path $root 'app.ico'
-$brandPath = Join-Path $root 'brand.png'
+$buildDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$assetsDir = Join-Path (Split-Path $buildDir -Parent) 'assets'
+$src = Join-Path $assetsDir 'brand_src.jpg'
+$icoPath = Join-Path $assetsDir 'icon.ico'
+$appIcoPath = Join-Path $assetsDir 'app.ico'
+$brandPath = Join-Path $assetsDir 'brand.png'
 
 Add-Type -ReferencedAssemblies 'System.Drawing' -TypeDefinition @'
 using System;
@@ -287,5 +288,4 @@ Write-Ico -Sizes @(16, 20, 24, 32, 48, 64) -Path $appIcoPath
 
 $brand.Dispose()
 $art.Dispose()
-
 
