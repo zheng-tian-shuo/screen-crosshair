@@ -7,4 +7,5 @@ settings.ini.bak
 # Intermediate build output; run build.ps1 to generate the executable
 build/ScreenCrosshair.exe
 build/得吃准星 v5.0.exe
+得吃准星 v5.0.exe
 ScreenCrosshair.exe

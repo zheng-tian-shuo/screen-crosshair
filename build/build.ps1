@@ -52,13 +52,13 @@ if ($LASTEXITCODE -ne 0) { throw '编译失败，看上面的报错' }
 
 Write-Host '[3/3] 复制便携版'
 # 文件名和窗口标题保持一致，都叫「得吃准星 v5.0」
-$final = Join-Path (Split-Path $root -Parent) '得吃准星 v5.0.exe'
+$final = Join-Path $root '得吃准星 v5.0.exe'
 Copy-Item $exe $final -Force
 # 改过名的旧包留着只会让人分不清哪个是新的（v1 的「屏幕准星.exe」不在这个清单里，不会被删）
 $olds = @('屏幕准星 v3.exe', '屏幕准星 v3.0.exe', '得吃准星 v3.0.exe', '得吃准星.exe')
 foreach ($o in $olds)
 {
-    $p = Join-Path (Split-Path $root -Parent) $o
+    $p = Join-Path $root $o
     if (-not (Test-Path $p)) { continue }
     # 旧版还开着的时候删不掉，这不算编译失败，提一句就行
     try { Remove-Item $p -Force }
