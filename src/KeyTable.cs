@@ -62,6 +62,27 @@ namespace ScreenCrosshair
         public static string NameOfVk(uint vk)
         {
             for (int i = 0; i < Vks.Length; i++) if (Vks[i] == vk) return Names[i];
+
+            switch (vk)
+            {
+                case (uint)Keys.Back: return "Backspace";
+                case (uint)Keys.Tab: return "Tab";
+                case (uint)Keys.Return: return "Enter";
+                case (uint)Keys.Escape: return "Esc";
+                case (uint)Keys.CapsLock: return "CapsLock";
+                case (uint)Keys.NumLock: return "NumLock";
+                case (uint)Keys.PrintScreen: return "PrintScreen";
+                case (uint)Keys.Up: return "Up";
+                case (uint)Keys.Down: return "Down";
+                case (uint)Keys.Left: return "Left";
+                case (uint)Keys.Right: return "Right";
+                case (uint)Keys.LWin: return "Left Win";
+                case (uint)Keys.RWin: return "Right Win";
+                case (uint)Keys.Apps: return "Menu";
+            }
+
+            string name = new KeysConverter().ConvertToString((Keys)vk);
+            if (!string.IsNullOrEmpty(name)) return name;
             return "键 " + vk;
         }
 

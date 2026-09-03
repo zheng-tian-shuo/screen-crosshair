@@ -100,6 +100,23 @@ namespace ScreenCrosshair
             return t;
         }
 
+        public static HotkeyBox Hotkey(Control parent, int x, int y, int w)
+        {
+            Panel wrap = new Panel();
+            wrap.Bounds = new Rectangle(x, y, w, 24);
+            wrap.BackColor = Theme.CardAlt;
+            wrap.Paint += BoxFrame;
+            parent.Controls.Add(wrap);
+
+            HotkeyBox t = new HotkeyBox();
+            wrap.Controls.Add(t);
+            EventHandler fit = delegate { FitBox(wrap, t); };
+            wrap.Resize += fit;
+            t.SizeChanged += fit;
+            fit(null, EventArgs.Empty);
+            return t;
+        }
+
         private static void BoxFrame(object sender, PaintEventArgs e)
         {
             Control c = sender as Control;

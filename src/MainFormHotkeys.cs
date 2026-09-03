@@ -10,7 +10,7 @@ namespace ScreenCrosshair
         // 下标就是 AppSettings.HotToggle…HotFree，别单独排序。
         private Label[] _hkName;
         private Chk[] _hkCtrl, _hkAlt, _hkShift;
-        private ComboBox[] _hkKey;
+        private HotkeyBox[] _hkKey;
         private FlatBtn[] _hkOn;
         private Label _lblHotState;
         private Chk _chkAuto;
@@ -18,6 +18,7 @@ namespace ScreenCrosshair
         private FlatBtn _btnGrab;
         private Timer _grabTimer;
         private int _grabLeft;
+        private ToolTip _hkTip;
 
         private void BuildPageHotkeys()
         {
@@ -30,8 +31,9 @@ namespace ScreenCrosshair
             _hkCtrl = new Chk[n];
             _hkAlt = new Chk[n];
             _hkShift = new Chk[n];
-            _hkKey = new ComboBox[n];
+            _hkKey = new HotkeyBox[n];
             _hkOn = new FlatBtn[n];
+            _hkTip = new ToolTip();
 
             for (int i = 0; i < n; i++)
             {
@@ -43,8 +45,13 @@ namespace ScreenCrosshair
                 _hkCtrl[i] = ModChk(c1, "Ctrl", 120, y);
                 _hkAlt[i] = ModChk(c1, "Alt", 174, y);
                 _hkShift[i] = ModChk(c1, "Shift", 222, y);
-                _hkKey[i] = Ui.Combo(c1, 282, y - 3, 94);
-                _hkKey[i].Items.AddRange(KeyTable.Names);
+                _hkKey[i] = Ui.Hotkey(c1, 282, y - 3, 94);
+                _hkTip.SetToolTip(_hkKey[i], "点击后直接按下键盘按键");
+                _hkKey[i].HotkeyChanged += delegate
+                {
+                    SetMod(_hkKey[slot].Modifiers, _hkCtrl[slot],
+                        _hkAlt[slot], _hkShift[slot]);
+                };
 
                 FlatBtn on = new FlatBtn();
                 on.Font = Theme.Small;
@@ -136,7 +143,7 @@ namespace ScreenCrosshair
             for (int i = 0; i < AppSettings.HotCount; i++)
             {
                 SetMod(_cfg.HotMod(i), _hkCtrl[i], _hkAlt[i], _hkShift[i]);
-                _hkKey[i].SelectedIndex = KeyTable.IndexOfVk(_cfg.HotKey(i));
+                _hkKey[i].SetHotkey(_cfg.HotMod(i), _cfg.HotKey(i));
                 SyncHotRow(i);
             }
         }
@@ -166,8 +173,8 @@ namespace ScreenCrosshair
         {
             for (int i = 0; i < AppSettings.HotCount; i++)
             {
-                uint key = _cfg.HotKey(i);
-                if (_hkKey[i].SelectedIndex >= 0) key = KeyTable.Vks[_hkKey[i].SelectedIndex];
+                uint key = _hkKey[i].VirtualKey;
+                if (key == 0) key = _cfg.HotKey(i);
                 _cfg.SetHot(i, ModOf(_hkCtrl[i], _hkAlt[i], _hkShift[i]), key);
             }
             RegisterHotkeys();
