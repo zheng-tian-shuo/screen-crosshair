@@ -350,7 +350,7 @@ namespace ScreenCrosshair
                 _btnCountdownDrag.Invalidate();
                 _cfg.Save();
                 UpdateCountdownOverlay();
-                Toast("倒计时位置已保存");
+                Toast("倒计时位置已应用，退出时保存");
             }
         }
 
@@ -409,7 +409,7 @@ namespace ScreenCrosshair
                 _btnClockDrag.Invalidate();
                 _cfg.Save();
                 UpdateClockOverlay();
-                Toast("时间位置已保存");
+                Toast("时间位置已应用，退出时保存");
             }
         }
 

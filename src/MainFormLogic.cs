@@ -6,8 +6,6 @@ namespace ScreenCrosshair
 {
     public partial class MainForm
     {
-        private Timer _saveTimer;
-
         private CrosshairItemSettings Cur()
         {
             List<CrosshairItemSettings> list = _cfg.Items;
@@ -154,17 +152,10 @@ namespace ScreenCrosshair
             return string.Equals(ForegroundExeName(), want, StringComparison.OrdinalIgnoreCase);
         }
 
-        /// <summary>滑块连续拖动时别每帧写盘，攒 400ms 一起存</summary>
+        /// <summary>记录配置已修改，实际写盘统一放到程序退出时</summary>
         private void SaveSoon()
         {
-            if (_saveTimer == null)
-            {
-                _saveTimer = new Timer();
-                _saveTimer.Interval = 400;
-                _saveTimer.Tick += delegate { _saveTimer.Stop(); _cfg.Save(); };
-            }
-            _saveTimer.Stop();
-            _saveTimer.Start();
+            _cfg.Save();
         }
     }
 }

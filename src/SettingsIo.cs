@@ -39,9 +39,18 @@ namespace ScreenCrosshair
             return it;
         }
 
-        /// <summary>先写临时文件再替换，异常中断时保留上一份配置和 .bak 备份。</summary>
+        private bool _savePending;
+
+        /// <summary>先标记配置已修改，实际写盘统一放到程序退出时。</summary>
         public void Save()
         {
+            _savePending = true;
+        }
+
+        /// <summary>退出时先写临时文件再替换，异常中断时保留上一份配置和 .bak 备份。</summary>
+        public void SaveToDisk()
+        {
+            if (!_savePending) return;
             try
             {
                 string path = ConfigPath;
@@ -59,6 +68,7 @@ namespace ScreenCrosshair
                     }
                 }
                 else File.Move(tmp, path);
+                _savePending = false;
             }
             catch (Exception ex) { AppLog.Write("保存配置失败", ex); }
         }

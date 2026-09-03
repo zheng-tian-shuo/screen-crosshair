@@ -115,12 +115,11 @@ namespace ScreenCrosshair
             catch { }
 
             if (_tick != null) { _tick.Stop(); _tick.Dispose(); _tick = null; }
-            if (_saveTimer != null) { _saveTimer.Stop(); _saveTimer.Dispose(); _saveTimer = null; }
             if (_grabTimer != null) { _grabTimer.Stop(); _grabTimer.Dispose(); _grabTimer = null; }
             if (_pickTimer != null) { _pickTimer.Stop(); _pickTimer.Dispose(); _pickTimer = null; }
             if (_toastTimer != null) { _toastTimer.Stop(); _toastTimer.Dispose(); _toastTimer = null; }
 
-            try { _cfg.Save(); }
+            try { _cfg.SaveToDisk(); }
             catch { }
 
             for (int i = 0; i < _ovl.Count; i++)
