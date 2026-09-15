@@ -31,7 +31,7 @@ namespace ScreenCrosshair
 
             Card c1 = NewCard(pg, "全局热键（每条都能单独开关）", 14, 412);
 
-            const int GroupW = 440;
+            const int GroupW = 468;
             int groupX = (c1.Width - GroupW) / 2;
             int n = AppSettings.HotCount;
             _hkName = new Label[n];
@@ -48,11 +48,12 @@ namespace ScreenCrosshair
                 int y = 44 + i * 34;
 
                 _hkName[i] = Ui.L(c1, AppSettings.HotNames[i], Theme.Body, Theme.TextMuted,
-                    groupX + 14, y + 2, 104, 20);
-                _hkCtrl[i] = ModChk(c1, "Ctrl", groupX + 120, y);
-                _hkAlt[i] = ModChk(c1, "Alt", groupX + 174, y);
-                _hkShift[i] = ModChk(c1, "Shift", groupX + 222, y);
-                _hkKey[i] = Ui.Hotkey(c1, groupX + 282, y - 3, 94);
+                    groupX + 14, y + 2, 100, 20);
+                _hkCtrl[i] = ModChk(c1, "Ctrl", groupX + 116, y);
+                _hkAlt[i] = ModChk(c1, "Alt", _hkCtrl[i].Right + 4, y);
+                _hkShift[i] = ModChk(c1, "Shift", _hkAlt[i].Right + 4, y);
+                int keyX = _hkShift[i].Right + 8;
+                _hkKey[i] = Ui.Hotkey(c1, keyX, y - 3, 86);
                 _hkTip.SetToolTip(_hkKey[i], "点击后直接按下键盘按键");
                 _hkKey[i].HotkeyChanged += delegate
                 {
@@ -62,7 +63,7 @@ namespace ScreenCrosshair
 
                 FlatBtn on = new FlatBtn();
                 on.Font = Theme.Small;
-                on.Bounds = new Rectangle(groupX + 380, y - 2, 60, 26);
+                on.Bounds = new Rectangle(keyX + 92, y - 2, 60, 26);
                 on.Click += delegate { ToggleHotEnabled(slot); };
                 c1.Controls.Add(on);
                 _hkOn[i] = on;
