@@ -92,7 +92,6 @@ namespace ScreenCrosshair
             }
             SyncLabels();
             ApplyToOverlays();
-            UpdatePreview();
             UpdateSideHint();
             SaveSoon();
         }

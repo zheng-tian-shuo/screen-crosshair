@@ -20,7 +20,7 @@ namespace ScreenCrosshair
         private void BuildPageWeakNetwork()
         {
             Panel pg = _pages[PageWeakNetwork];
-            Card c = NewCard(pg, "灵魂出窍（只作用于指定应用进程）", 14, 326);
+            Card c = NewCard(pg, "灵魂出窍（仅作用于指定应用）", 14, 326);
 
             Ui.L(c, "应用进程", Theme.Body, Theme.TextMuted, 14, 44, 62, 20);
             _tbWeakExe = Ui.Box(c, 78, 40, 214);

@@ -22,8 +22,8 @@ namespace ScreenCrosshair
             {
                 if (!createdNew)
                 {
-                    MessageBox.Show(HelpText.AppName + "已在运行，请查看系统托盘图标。",
-                        HelpText.AppName,
+                    MessageBox.Show(AppInfo.AppName + "已在运行，请查看系统托盘图标。",
+                        AppInfo.AppName,
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
@@ -91,7 +91,7 @@ namespace ScreenCrosshair
             sb.AppendLine(title + "。可以把下面的信息截图反馈：");
             sb.AppendLine();
             sb.AppendLine(ex != null ? ex.ToString() : "未知错误");
-            MessageBox.Show(sb.ToString(), HelpText.AppName,
+            MessageBox.Show(sb.ToString(), AppInfo.AppName,
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

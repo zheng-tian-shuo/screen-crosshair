@@ -136,7 +136,7 @@ namespace ScreenCrosshair
             using (SaveFileDialog d = new SaveFileDialog())
             {
                 d.Filter = "配置文件 (*.ini)|*.ini";
-                d.FileName = HelpText.AppName + "配置.ini";
+                d.FileName = AppInfo.AppName + "配置.ini";
                 if (d.ShowDialog(this) != DialogResult.OK) return;
                 Toast(_cfg.ExportTo(d.FileName) ? "已导出" : "导出失败，检查目标位置能不能写");
             }

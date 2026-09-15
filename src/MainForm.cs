@@ -19,7 +19,7 @@ namespace ScreenCrosshair
 
         // 「位置」原来是独立一页，可它调的还是当前准星，和「准星」页一直分不清，
         // 现在整块并到「准星」页下半部分了
-        private static readonly string[] TabNames = { "准星", "倒计时", "预设", "热键", "灵魂出窍", "说明" };
+        private static readonly string[] TabNames = { "准星", "倒计时", "预设", "热键", "灵魂出窍" };
 
         // 页序号统一走这几个常量，别再往代码里散落 0/1/2——之前删一页就得满地改数字
         private const int PageCrosshair = 0;
@@ -27,22 +27,18 @@ namespace ScreenCrosshair
         private const int PageProfiles = 2;
         private const int PageHotkeys = 3;
         private const int PageWeakNetwork = 4;
-        private const int PageHelp = 5;
-        private const int PageCount = 6;
+        private const int PageCount = 5;
 
         private const int WinW = 916;
         private const int WinH = 624;
         private const int BarH = 52;
-        private const int SideW = 152;
-        private const int PrevW = 268;
+        private const int SideW = 168;
 
         private FlatBtn _pillGlobal;
         private SideTab[] _tabs;
         private Label _lblSideHint;
         private Panel _host;
         private Panel[] _pages;
-        private Panel _previewWrap;
-        private PreviewBox _preview;
         private int _pageW;
 
         private CountdownOverlayForm _countdownOverlay;
@@ -66,7 +62,6 @@ namespace ScreenCrosshair
             BuildPageProfiles();
             BuildPageHotkeys();
             BuildPageWeakNetwork();
-            BuildPageHelp();
             BuildTray();
 
             ApplyScale();
@@ -80,7 +75,7 @@ namespace ScreenCrosshair
 
         private void InitWindow()
         {
-            Text = HelpText.AppName + " " + HelpText.Version;
+            Text = AppInfo.AppName + " " + AppInfo.Version;
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(WinW, WinH);
@@ -143,7 +138,6 @@ namespace ScreenCrosshair
             MinimumSize = Size;
             MaximumSize = Size;
 
-            RelayoutHelp();
             ApplyRegion();
         }
 
@@ -170,8 +164,8 @@ namespace ScreenCrosshair
             logo.MouseDown += BarDrag;
             bar.Controls.Add(logo);
 
-            Ui.L(bar, HelpText.AppName, Theme.Title, Theme.Text, 60, 8, 130, 24).MouseDown += BarDrag;
-            Ui.L(bar, HelpText.Version + " · 炸点标记覆盖层", Theme.Sub, Theme.TextFaint,
+            Ui.L(bar, AppInfo.AppName, Theme.Title, Theme.Text, 60, 8, 130, 24).MouseDown += BarDrag;
+            Ui.L(bar, "屏幕准星与计时工具", Theme.Sub, Theme.TextFaint,
                 62, 31, 220, 16).MouseDown += BarDrag;
 
             _pillGlobal = new FlatBtn();

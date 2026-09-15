@@ -11,21 +11,18 @@ namespace ScreenCrosshair
         private const int HkWeak = 0x0A76;
 
         private Timer _tick;
-        private string _lastFg = "";   // 哨兵值，保证第一次 tick 一定重算一遍
+        private string _lastFg = "\x01";
         private string _lastScreen;
 
-        /// <summary>顺序必须和 AppSettings.HotToggle…HotFree 一致</summary>
         private static readonly int[] HkIds =
             { HkToggle, HkSwitch, HkEvacuation, HkRocket, HkFreeCountdown, HkWeak };
 
-        /// <summary>
-        /// 全部注销再按启用状态重登。停用的那条只是跳过注册，组合键本身仍留在配置里。
-        /// </summary>
         private void RegisterHotkeys()
         {
             for (int i = 0; i < HkIds.Length; i++) Native.UnregisterHotKey(Handle, HkIds[i]);
 
-            int okCount = 0, onCount = 0;
+            int okCount = 0;
+            int onCount = 0;
             string bad = "";
             for (int i = 0; i < AppSettings.HotCount; i++)
             {
@@ -33,14 +30,25 @@ namespace ScreenCrosshair
                 onCount++;
                 uint key = _cfg.HotKey(i);
                 uint mod = _cfg.HotMod(i);
+                int duplicate = FindDuplicateHotkey(i, mod, key);
+                if (duplicate >= 0)
+                {
+                    bad += (bad.Length > 0 ? "\uFF1B" : "") + AppSettings.HotShort[i]
+                        + "\uFF08\u4E0E " + AppSettings.HotShort[duplicate] + " \u91CD\u590D\uFF09";
+                    continue;
+                }
+
                 bool ok = key != 0 && Native.RegisterHotKey(Handle, HkIds[i],
                     mod | Native.MOD_NOREPEAT, key);
                 if (ok) okCount++;
                 else
                 {
                     int error = Marshal.GetLastWin32Error();
-                    string reason = error == 1409 ? "占用" : "错误 " + error;
-                    bad += (bad.Length > 0 ? "、" : "") + AppSettings.HotShort[i] + "（" + reason + "）";
+                    string reason = error == 1409
+                        ? HotkeyText(mod, key) + " \u88AB\u5176\u4ED6\u7A0B\u5E8F\u6216\u7CFB\u7EDF\u5360\u7528"
+                        : "\u9519\u8BEF " + error;
+                    bad += (bad.Length > 0 ? "\uFF1B" : "") + AppSettings.HotShort[i]
+                        + "\uFF08" + reason + "\uFF09";
                 }
             }
 
@@ -49,21 +57,39 @@ namespace ScreenCrosshair
                 if (onCount == 0)
                 {
                     _lblHotState.ForeColor = Theme.TextFaint;
-                    _lblHotState.Text = AppSettings.HotCount + " 条热键全部停用";
+                    _lblHotState.Text = AppSettings.HotCount + " \u6761\u70ED\u952E\u5168\u90E8\u505C\u7528";
                 }
                 else if (bad.Length == 0)
                 {
                     _lblHotState.ForeColor = Theme.Green;
-                    _lblHotState.Text = "已生效 " + okCount + " 条，停用 "
-                        + (AppSettings.HotCount - onCount) + " 条";
+                    _lblHotState.Text = "\u5DF2\u751F\u6548 " + okCount + " \u6761\uFF0C\u505C\u7528 "
+                        + (AppSettings.HotCount - onCount) + " \u6761";
                 }
                 else
                 {
                     _lblHotState.ForeColor = Theme.Warn;
-                    _lblHotState.Text = "注册失败：" + bad + "，换个组合或先停用";
+                    _lblHotState.Text = "\u6CE8\u518C\u5931\u8D25\uFF1A" + bad;
                 }
             }
             UpdateSideHint();
+        }
+
+        private int FindDuplicateHotkey(int slot, uint mod, uint key)
+        {
+            if (key == 0) return -1;
+            for (int i = 0; i < slot; i++)
+                if (_cfg.HotEnabled(i) && _cfg.HotMod(i) == mod && _cfg.HotKey(i) == key)
+                    return i;
+            return -1;
+        }
+
+        private static string HotkeyText(uint mod, uint key)
+        {
+            string text = "";
+            if ((mod & Native.MOD_CONTROL) != 0) text += "Ctrl + ";
+            if ((mod & Native.MOD_ALT) != 0) text += "Alt + ";
+            if ((mod & Native.MOD_SHIFT) != 0) text += "Shift + ";
+            return text + KeyTable.NameOfVk(key);
         }
 
         protected override void WndProc(ref Message m)
@@ -89,10 +115,6 @@ namespace ScreenCrosshair
             _tick.Start();
         }
 
-        /// <summary>
-        /// 两件事：前台程序变了要重算自动显隐；鼠标换到别的屏了，
-        /// 「跟随鼠标所在屏」的准星要搬过去。
-        /// </summary>
         private void TickCheck(object sender, EventArgs e)
         {
             TickCountdowns();
@@ -125,7 +147,6 @@ namespace ScreenCrosshair
                     f.RefreshPosition();
                     f.Redraw();
                 }
-                UpdatePreview();
             }
             catch { }
         }

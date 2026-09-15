@@ -97,7 +97,7 @@ namespace ScreenCrosshair
         public List<string> BuildLines()
         {
             List<string> L = new List<string>();
-            L.Add("# " + HelpText.AppName + " " + HelpText.Version + " 配置文件");
+            L.Add("# " + AppInfo.AppName + " " + AppInfo.Version + " 配置文件");
             L.Add("# 纯文本，可以直接用记事本改；改坏某一行只会丢那一项，不影响其他设置。");
             L.Add("");
             L.Add("[app]");

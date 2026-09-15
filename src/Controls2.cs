@@ -128,12 +128,16 @@ namespace ScreenCrosshair
                 g.FillRectangle(b, ClientRectangle);
 
             Rectangle r = new Rectangle(0, 0, Width - 1, Height - 1);
-            Ui.FillRound(g, r, Theme.S(8), Theme.Card);
-            Ui.DrawRound(g, r, Theme.S(8), Theme.Border, 1f);
+            Ui.FillRound(g, r, Theme.S(6), Theme.Card);
+            Ui.DrawRound(g, r, Theme.S(6), Theme.Border, 1f);
 
             if (!string.IsNullOrEmpty(Caption))
+            {
                 TextRenderer.DrawText(g, Caption, Theme.SectionHead,
                     new Point(Theme.S(14), Theme.S(11)), Theme.Accent);
+                using (Pen p = new Pen(Theme.Border, 1f))
+                    g.DrawLine(p, Theme.S(14), Theme.S(32), Width - Theme.S(15), Theme.S(32));
+            }
         }
     }
 }

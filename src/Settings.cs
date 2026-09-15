@@ -149,7 +149,7 @@ namespace ScreenCrosshair
 
         /// <summary>状态行里列举注册失败的项时用的短名</summary>
         public static readonly string[] HotShort =
-            { "显隐", "切预设", "撤离点", "火箭", "自由", "弱网" };
+            { "显隐", "切预设", "撤离点", "火箭", "自由", "灵魂出窍" };
 
         public uint HotMod(int i)
         {

@@ -16,7 +16,7 @@ namespace ScreenCrosshair
             // 会被缩得发毛；气泡通知里的那张图标也是从这儿来的。
             try { _tray.Icon = Brand.IconAt(SystemInformation.SmallIconSize.Width); }
             catch { }
-            _tray.Text = HelpText.AppName + " " + HelpText.Version;
+            _tray.Text = AppInfo.AppName + " " + AppInfo.Version;
             _tray.Visible = true;
             _tray.DoubleClick += delegate { ShowPanel(); };
 
@@ -68,7 +68,7 @@ namespace ScreenCrosshair
             if (!_trayTipShown && _tray != null)
             {
                 _trayTipShown = true;
-                TrayToast.Pop(HelpText.AppName + "还在运行",
+                TrayToast.Pop(AppInfo.AppName + "还在运行",
                     "准星继续显示。双击托盘图标回到设置，右键菜单可以退出。");
             }
         }

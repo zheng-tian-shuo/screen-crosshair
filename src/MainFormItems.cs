@@ -72,7 +72,6 @@ namespace ScreenCrosshair
             }
             finally { _loading = false; }
             SyncLabels();
-            UpdatePreview();
             SaveSoon();
         }
 

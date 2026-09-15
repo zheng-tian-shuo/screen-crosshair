@@ -57,7 +57,6 @@ namespace ScreenCrosshair
             finally { _loading = false; }
 
             SyncLabels();
-            UpdatePreview();
             UpdatePill();
             UpdateSideHint();
         }
@@ -122,26 +121,6 @@ namespace ScreenCrosshair
             }
         }
 
-        private void UpdatePreview()
-        {
-            if (_preview == null) return;
-            CrosshairItemSettings it = Cur();
-            _preview.Item = it;
-            _preview.Invalidate();
-            if (_lblPrevInfo == null || it == null) return;
-
-            Screen sc = ScreenOf(it);
-            string pos = it.Centered
-                ? "屏幕居中"
-                : "X " + it.X + "   Y " + it.Y;
-            _lblPrevInfo.Text =
-                "形状　" + Shapes.NameOf(it.Shape) + "\n" +
-                "位置　" + pos + "\n" +
-                "屏幕　" + (string.IsNullOrEmpty(it.ScreenName) ? "跟随鼠标" : "已指定") +
-                "  " + sc.Bounds.Width + "×" + sc.Bounds.Height + "\n" +
-                "颜色　" + Theme.HexOf(it.Color) + "   " + it.Opacity + "%";
-        }
-
         private void UpdatePill()
         {
             if (_pillGlobal == null) return;
@@ -155,9 +134,8 @@ namespace ScreenCrosshair
             if (_lblSideHint == null) return;
             _lblSideHint.Text =
                 "当前预设\n" + _cfg.Active.Name + "\n\n" +
-                "准星 " + _cfg.Items.Count + " 个\n\n" +
-                "显隐\n" + HotHint(AppSettings.HotToggle) + "\n\n" +
-                "切预设\n" + HotHint(AppSettings.HotSwitch);
+                "显示 / 隐藏\n" + HotHint(AppSettings.HotToggle) + "\n\n" +
+                "切换预设\n" + HotHint(AppSettings.HotSwitch);
         }
 
         /// <summary>停用的热键在侧栏直接写「已停用」，免得看着有键其实按不动</summary>

@@ -9,7 +9,7 @@ namespace ScreenCrosshair
     public class FlatBtn : Control
     {
         public int Kind;
-        public int Radius = 6;
+        public int Radius = 5;
         private bool _hover, _down;
 
         public FlatBtn()
@@ -48,7 +48,7 @@ namespace ScreenCrosshair
             switch (Kind)
             {
                 case 1:
-                    bg = Theme.Accent; fg = Color.FromArgb(8, 14, 16); bd = Theme.Accent; break;
+                    bg = Theme.Accent; fg = Color.FromArgb(20, 22, 26); bd = Theme.Accent; break;
                 case 2:
                     bg = Theme.DangerDim; fg = Theme.Danger; bd = Color.FromArgb(150, 60, 64); break;
                 case 3:
@@ -124,19 +124,19 @@ namespace ScreenCrosshair
 
             if (Active)
             {
-                Ui.FillRound(g, r, Theme.S(7), Theme.CardAlt);
+                Ui.FillRound(g, r, Theme.S(5), Theme.CardAlt);
                 using (SolidBrush b = new SolidBrush(Theme.Accent))
                 using (GraphicsPath p = Ui.Round(
-                    new Rectangle(0, Theme.S(8), Theme.S(3), Height - Theme.S(17)), 1))
+                    new Rectangle(0, Theme.S(9), Theme.S(3), Height - Theme.S(18)), 1))
                     g.FillPath(b, p);
             }
             else if (_hover)
             {
-                Ui.FillRound(g, r, Theme.S(7), Theme.Mix(Theme.Window, Color.White, 0.05));
+                Ui.FillRound(g, r, Theme.S(5), Theme.Mix(Theme.Window, Color.White, 0.05));
             }
 
             TextRenderer.DrawText(g, Text, Font,
-                new Rectangle(Theme.S(16), 0, Width - Theme.S(20), Height),
+                new Rectangle(Theme.S(18), 0, Width - Theme.S(24), Height),
                 Active ? Theme.Text : Theme.TextMuted,
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
         }

@@ -29,8 +29,10 @@ namespace ScreenCrosshair
         {
             Panel pg = _pages[PageHotkeys];
 
-            Card c1 = NewCard(pg, "全局热键（每条都能单独开关）", 14, 340);
+            Card c1 = NewCard(pg, "全局热键（每条都能单独开关）", 14, 412);
 
+            const int GroupW = 440;
+            int groupX = (c1.Width - GroupW) / 2;
             int n = AppSettings.HotCount;
             _hkName = new Label[n];
             _hkCtrl = new Chk[n];
@@ -46,11 +48,11 @@ namespace ScreenCrosshair
                 int y = 44 + i * 34;
 
                 _hkName[i] = Ui.L(c1, AppSettings.HotNames[i], Theme.Body, Theme.TextMuted,
-                    14, y + 2, 104, 20);
-                _hkCtrl[i] = ModChk(c1, "Ctrl", 120, y);
-                _hkAlt[i] = ModChk(c1, "Alt", 174, y);
-                _hkShift[i] = ModChk(c1, "Shift", 222, y);
-                _hkKey[i] = Ui.Hotkey(c1, 282, y - 3, 94);
+                    groupX + 14, y + 2, 104, 20);
+                _hkCtrl[i] = ModChk(c1, "Ctrl", groupX + 120, y);
+                _hkAlt[i] = ModChk(c1, "Alt", groupX + 174, y);
+                _hkShift[i] = ModChk(c1, "Shift", groupX + 222, y);
+                _hkKey[i] = Ui.Hotkey(c1, groupX + 282, y - 3, 94);
                 _hkTip.SetToolTip(_hkKey[i], "点击后直接按下键盘按键");
                 _hkKey[i].HotkeyChanged += delegate
                 {
@@ -60,7 +62,7 @@ namespace ScreenCrosshair
 
                 FlatBtn on = new FlatBtn();
                 on.Font = Theme.Small;
-                on.Bounds = new Rectangle(380, y - 2, 60, 26);
+                on.Bounds = new Rectangle(groupX + 380, y - 2, 60, 26);
                 on.Click += delegate { ToggleHotEnabled(slot); };
                 c1.Controls.Add(on);
                 _hkOn[i] = on;
@@ -71,19 +73,35 @@ namespace ScreenCrosshair
             FlatBtn ap = new FlatBtn();
             ap.Kind = 1;
             ap.Text = "应用热键";
-            ap.Bounds = new Rectangle(14, by, 100, 28);
+            ap.Bounds = new Rectangle(groupX + 14, by, 100, 28);
             ap.Click += delegate { ApplyHotkeys(); };
             c1.Controls.Add(ap);
 
-            _lblHotState = Ui.L(c1, "", Theme.Small, Theme.TextMuted, 124, by + 4, 316, 20);
+            _lblHotState = Ui.L(c1, "", Theme.Small, Theme.TextMuted,
+                groupX + 124, by + 4, 316, 20);
 
             // 两句话手动断行：交给自动换行会把「说明别 / 的程序」这种词切成两截
             Ui.L(c1, "改完组合键要按「应用热键」；右边的开关按一下立刻生效。\n"
                     + "显示「被占用」说明这个组合被别的程序抢了，换一个或者把它停用。",
-                Theme.Small, Theme.TextFaint, 14, by + 38, 426, 34);
+                Theme.Small, Theme.TextFaint, groupX + 14, by + 38, 426, 34);
+
+            Panel permissionSep = new Panel();
+            permissionSep.Bounds = new Rectangle(groupX + 14, by + 84, 426, 1);
+            permissionSep.BackColor = Theme.Border;
+            c1.Controls.Add(permissionSep);
+
+            Ui.L(c1, "游戏权限", Theme.Body, Theme.TextMuted,
+                groupX + 14, by + 100, 72, 28);
+            _btnAdminMode = new FlatBtn();
+            _btnAdminMode.Bounds = new Rectangle(groupX + 100, by + 100, 164, 28);
+            _btnAdminMode.Click += delegate { RestartAsAdministrator(); };
+            c1.Controls.Add(_btnAdminMode);
+            _lblAdminHint = Ui.L(c1, "", Theme.Small, Theme.TextFaint,
+                groupX + 276, by + 100, 164, 28);
+            _lblAdminHint.TextAlign = ContentAlignment.MiddleLeft;
 
             // ---- 自动显隐 ----
-            Card c2 = NewCard(pg, "跟着游戏自动显隐", 366, 198);
+            Card c2 = NewCard(pg, "跟着游戏自动显隐", 438, 150);
 
             _chkAuto = new Chk();
             _chkAuto.Text = "只在指定程序处于前台时显示准星";
@@ -108,13 +126,6 @@ namespace ScreenCrosshair
                 Theme.Small, Theme.TextFaint, 182, 108, 256, 28);
             grabHint.TextAlign = ContentAlignment.MiddleLeft;
 
-            Ui.L(c2, "游戏权限", Theme.Body, Theme.TextMuted, 14, 150, 54, 20);
-            _btnAdminMode = new FlatBtn();
-            _btnAdminMode.Bounds = new Rectangle(78, 146, 160, 28);
-            _btnAdminMode.Click += delegate { RestartAsAdministrator(); };
-            c2.Controls.Add(_btnAdminMode);
-            _lblAdminHint = Ui.L(c2, "", Theme.Small, Theme.TextFaint, 248, 146, 190, 28);
-            _lblAdminHint.TextAlign = ContentAlignment.MiddleCenter;
         }
 
         private void UpdateAdminModeButton()
