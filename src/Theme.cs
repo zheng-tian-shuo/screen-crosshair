@@ -7,13 +7,13 @@ namespace ScreenCrosshair
     public static class Theme
     {
         public static readonly Color Window = Color.FromArgb(18, 19, 23);
-        public static readonly Color Card = Color.FromArgb(26, 28, 33);
-        public static readonly Color CardAlt = Color.FromArgb(34, 37, 44);
-        public static readonly Color Border = Color.FromArgb(48, 52, 60);
-        public static readonly Color BorderLit = Color.FromArgb(70, 76, 88);
-        public static readonly Color Text = Color.FromArgb(240, 241, 244);
-        public static readonly Color TextMuted = Color.FromArgb(160, 166, 176);
-        public static readonly Color TextFaint = Color.FromArgb(110, 116, 128);
+        public static readonly Color Card = Color.FromArgb(27, 29, 35);
+        public static readonly Color CardAlt = Color.FromArgb(37, 40, 48);
+        public static readonly Color Border = Color.FromArgb(54, 58, 68);
+        public static readonly Color BorderLit = Color.FromArgb(82, 88, 102);
+        public static readonly Color Text = Color.FromArgb(244, 245, 247);
+        public static readonly Color TextMuted = Color.FromArgb(181, 187, 198);
+        public static readonly Color TextFaint = Color.FromArgb(132, 140, 153);
 
         // 图标上的那点金色，整套界面的强调色都从它来
         public static readonly Color Accent = Color.FromArgb(245, 190, 58);
@@ -27,15 +27,15 @@ namespace ScreenCrosshair
 
         private const string Face = "Microsoft YaHei UI";
 
-        public static readonly Font Title = new Font(Face, 14f, FontStyle.Bold);
-        public static readonly Font Sub = new Font(Face, 8.5f);
-        public static readonly Font Body = new Font(Face, 9f);
-        public static readonly Font BodyBold = new Font(Face, 9f, FontStyle.Bold);
-        public static readonly Font Small = new Font(Face, 8.5f);
-        public static readonly Font SectionHead = new Font(Face, 9.5f, FontStyle.Bold);
-        public static readonly Font Mono = new Font("Consolas", 9.5f, FontStyle.Bold);
-        public static readonly Font TabFont = new Font(Face, 9.5f);
-        public static readonly Font HelpBody = new Font(Face, 9f);
+        public static readonly Font Title = new Font(Face, 15f, FontStyle.Bold);
+        public static readonly Font Sub = new Font(Face, 9f);
+        public static readonly Font Body = new Font(Face, 10f);
+        public static readonly Font BodyBold = new Font(Face, 10f, FontStyle.Bold);
+        public static readonly Font Small = new Font(Face, 9f);
+        public static readonly Font SectionHead = new Font(Face, 10.5f, FontStyle.Bold);
+        public static readonly Font Mono = new Font("Consolas", 10f, FontStyle.Bold);
+        public static readonly Font TabFont = new Font(Face, 10f);
+        public static readonly Font HelpBody = new Font(Face, 10f);
 
         /// <summary>在给定底色上取可读的前景色</summary>
         public static Color ContrastOn(Color c)

@@ -6,7 +6,7 @@ namespace ScreenCrosshair
 {
     public partial class MainForm
     {
-        private const int ContentColumnW = 500;
+        private const int ContentColumnW = 468;
         // ---------------- 左侧导航 ----------------
         private void BuildSide()
         {

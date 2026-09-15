@@ -20,7 +20,7 @@ namespace ScreenCrosshair
         private void BuildPageWeakNetwork()
         {
             Panel pg = _pages[PageWeakNetwork];
-            Card c = NewCard(pg, "灵魂出窍（仅作用于指定应用）", 14, 326);
+            Card c = NewCard(pg, "灵魂出窍（仅作用于指定应用）", 14, 340);
 
             Ui.L(c, "应用进程", Theme.Body, Theme.TextMuted, 14, 44, 62, 20);
             _tbWeakExe = Ui.Box(c, 78, 40, 214);
@@ -31,7 +31,8 @@ namespace ScreenCrosshair
             _btnWeakGrab.Font = Theme.Small;
             _btnWeakGrab.Click += delegate { StartWeakProcessGrab(); };
             c.Controls.Add(_btnWeakGrab);
-            Ui.L(c, "可填任意 .exe 文件名，或点右侧按钮切到目标程序后自动抓取。", Theme.Small, Theme.TextFaint, 78, 68, 350, 18);
+            Ui.L(c, "可填任意 .exe 文件名，或点右侧按钮切到目标程序后自动抓取。", Theme.Small, Theme.TextFaint,
+                78, 68, 350, 24);
 
             Ui.L(c, "弱网档位", Theme.Body, Theme.TextMuted, 14, 100, 62, 20);
             _cbWeakLevel = Ui.Combo(c, 78, 97, 200);
@@ -62,9 +63,9 @@ namespace ScreenCrosshair
             _btnWeakOff.Click += delegate { StopWeakNetwork(false); };
             c.Controls.Add(_btnWeakOff);
 
-            _lblWeakState = Ui.L(c, "", Theme.Small, Theme.TextMuted, 14, 238, 414, 52);
+            _lblWeakState = Ui.L(c, "", Theme.Small, Theme.TextMuted, 14, 238, 414, 30);
             Ui.L(c, "使用 Windows 临时 QoS 策略限制出站带宽。需要管理员权限；\n程序退出或下次启动会尝试恢复网络。",
-                Theme.Small, Theme.TextFaint, 14, 286, 414, 34);
+                Theme.Small, Theme.TextFaint, 14, 278, 414, 40);
         }
 
         private void PushWeakNetworkToUi()
