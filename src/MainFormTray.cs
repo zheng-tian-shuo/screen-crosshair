@@ -33,6 +33,8 @@ namespace ScreenCrosshair
             AddMenu(m, "启动自由倒计时", delegate { StartCountdown(2); });
             AddMenu(m, "停止全部倒计时", delegate { StopAllCountdowns(); });
             m.Items.Add(new ToolStripSeparator());
+            AddMenu(m, "开启 / 关闭弱网", delegate { ToggleWeakNetworkFromHotkey(); });
+            m.Items.Add(new ToolStripSeparator());
             AddMenu(m, "退出", delegate { ExitApp(); });
             _tray.ContextMenuStrip = m;
         }
@@ -111,13 +113,17 @@ namespace ScreenCrosshair
                 Native.UnregisterHotKey(Handle, HkEvacuation);
                 Native.UnregisterHotKey(Handle, HkRocket);
                 Native.UnregisterHotKey(Handle, HkFreeCountdown);
+                Native.UnregisterHotKey(Handle, HkWeak);
             }
             catch { }
 
             if (_tick != null) { _tick.Stop(); _tick.Dispose(); _tick = null; }
             if (_grabTimer != null) { _grabTimer.Stop(); _grabTimer.Dispose(); _grabTimer = null; }
+            if (_weakGrabTimer != null) { _weakGrabTimer.Stop(); _weakGrabTimer.Dispose(); _weakGrabTimer = null; }
             if (_pickTimer != null) { _pickTimer.Stop(); _pickTimer.Dispose(); _pickTimer = null; }
             if (_toastTimer != null) { _toastTimer.Stop(); _toastTimer.Dispose(); _toastTimer = null; }
+
+            RestoreWeakNetworkOnExit();
 
             try { _cfg.SaveToDisk(); }
             catch { }
@@ -141,6 +147,13 @@ namespace ScreenCrosshair
                 try { _clockOverlay.Close(); _clockOverlay.Dispose(); }
                 catch { }
                 _clockOverlay = null;
+            }
+
+            if (_weakIndicator != null)
+            {
+                try { _weakIndicator.Close(); _weakIndicator.Dispose(); }
+                catch { }
+                _weakIndicator = null;
             }
 
             if (_tray != null)

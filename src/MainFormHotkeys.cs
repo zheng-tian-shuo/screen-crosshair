@@ -1,5 +1,8 @@
 using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
+using System.Security.Principal;
 using System.Windows.Forms;
 
 namespace ScreenCrosshair
@@ -16,6 +19,8 @@ namespace ScreenCrosshair
         private Chk _chkAuto;
         private TextBox _tbGameExe;
         private FlatBtn _btnGrab;
+        private FlatBtn _btnAdminMode;
+        private Label _lblAdminHint;
         private Timer _grabTimer;
         private int _grabLeft;
         private ToolTip _hkTip;
@@ -24,7 +29,7 @@ namespace ScreenCrosshair
         {
             Panel pg = _pages[PageHotkeys];
 
-            Card c1 = NewCard(pg, "全局热键（每条都能单独开关）", 14, 306);
+            Card c1 = NewCard(pg, "全局热键（每条都能单独开关）", 14, 340);
 
             int n = AppSettings.HotCount;
             _hkName = new Label[n];
@@ -78,7 +83,7 @@ namespace ScreenCrosshair
                 Theme.Small, Theme.TextFaint, 14, by + 38, 426, 34);
 
             // ---- 自动显隐 ----
-            Card c2 = NewCard(pg, "跟着游戏自动显隐", 332, 152);
+            Card c2 = NewCard(pg, "跟着游戏自动显隐", 366, 198);
 
             _chkAuto = new Chk();
             _chkAuto.Text = "只在指定程序处于前台时显示准星";
@@ -102,6 +107,53 @@ namespace ScreenCrosshair
             Label grabHint = Ui.L(c2, "点一下再切到游戏，倒数结束自动填好。",
                 Theme.Small, Theme.TextFaint, 182, 108, 256, 28);
             grabHint.TextAlign = ContentAlignment.MiddleLeft;
+
+            Ui.L(c2, "游戏权限", Theme.Body, Theme.TextMuted, 14, 150, 54, 20);
+            _btnAdminMode = new FlatBtn();
+            _btnAdminMode.Bounds = new Rectangle(78, 146, 160, 28);
+            _btnAdminMode.Click += delegate { RestartAsAdministrator(); };
+            c2.Controls.Add(_btnAdminMode);
+            _lblAdminHint = Ui.L(c2, "", Theme.Small, Theme.TextFaint, 248, 146, 190, 28);
+            _lblAdminHint.TextAlign = ContentAlignment.MiddleCenter;
+        }
+
+        private void UpdateAdminModeButton()
+        {
+            if (_btnAdminMode == null) return;
+            bool admin = IsAdministrator();
+            _btnAdminMode.Text = admin ? "当前已是管理员模式" : "以管理员模式重启";
+            _btnAdminMode.Enabled = !admin;
+            _btnAdminMode.Kind = admin ? 0 : 1;
+            _btnAdminMode.Invalidate();
+            if (_lblAdminHint != null)
+            {
+                _lblAdminHint.Text = admin ? "管理员模式已启用" : "游戏中热键失效时，点此按钮";
+                _lblAdminHint.ForeColor = admin ? Theme.Green : Theme.Danger;
+            }
+        }
+
+        private void RestartAsAdministrator()
+        {
+            if (IsAdministrator()) return;
+            try
+            {
+                // Close first so Program can release the single-instance mutex before UAC launch.
+                Program.RestartAsAdminRequested = true;
+                _reallyExit = true;
+                Close();
+            }
+            catch (Win32Exception) { Toast("已取消管理员模式重启"); }
+            catch (Exception ex) { AppLog.Write("管理员模式重启失败", ex); Toast("管理员模式重启失败"); }
+        }
+
+        private static bool IsAdministrator()
+        {
+            try
+            {
+                WindowsPrincipal p = new WindowsPrincipal(WindowsIdentity.GetCurrent());
+                return p.IsInRole(WindowsBuiltInRole.Administrator);
+            }
+            catch { return false; }
         }
 
         /// <summary>

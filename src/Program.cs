@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -7,6 +8,7 @@ namespace ScreenCrosshair
 {
     internal static class Program
     {
+        internal static bool RestartAsAdminRequested;
         // 与 v1/v2 区分，避免新旧版本同时驻留导致屏幕上叠两套准星
         private const string MutexName =
             "ScreenCrosshair_v5_9F2C41A8_6B7D_4E15_9A83_2C5E70D4B1F6";
@@ -15,6 +17,7 @@ namespace ScreenCrosshair
         private static void Main()
         {
             bool createdNew;
+            bool restartAsAdmin = false;
             using (Mutex mutex = new Mutex(true, MutexName, out createdNew))
             {
                 if (!createdNew)
@@ -54,6 +57,20 @@ namespace ScreenCrosshair
                 {
                     GC.KeepAlive(mutex);
                 }
+                restartAsAdmin = RestartAsAdminRequested;
+            }
+
+            if (restartAsAdmin)
+            {
+                try
+                {
+                    ProcessStartInfo psi = new ProcessStartInfo(Application.ExecutablePath);
+                    psi.Verb = "runas";
+                    psi.UseShellExecute = true;
+                    psi.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                    Process.Start(psi);
+                }
+                catch (Exception ex) { AppLog.Write("管理员模式重启失败", ex); }
             }
         }
 

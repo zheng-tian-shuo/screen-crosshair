@@ -121,6 +121,9 @@ namespace ScreenCrosshair
             L.Add("FreeMod=" + FreeMod);
             L.Add("FreeKey=" + FreeKey);
             L.Add("FreeOn=" + (FreeOn ? "1" : "0"));
+            L.Add("WeakMod=" + WeakMod);
+            L.Add("WeakKey=" + WeakKey);
+            L.Add("WeakOn=" + (WeakOn ? "1" : "0"));
             L.Add("FreeCountdownSeconds=" + FreeCountdownSeconds);
             L.Add("CountdownFontSize=" + CountdownFontSize);
             L.Add("CountdownRightOffset=" + CountdownRightOffset);
@@ -137,6 +140,15 @@ namespace ScreenCrosshair
             L.Add("ClockSeconds=" + (ClockSeconds ? "1" : "0"));
             L.Add("AutoHide=" + (AutoHide ? "1" : "0"));
             L.Add("GameExe=" + (GameExe == null ? "" : GameExe));
+            L.Add("WeakGameExe=" + (WeakGameExe == null ? "" : WeakGameExe));
+            L.Add("WeakLevel=" + WeakLevel);
+            L.Add("WeakUseMtu=" + (WeakUseMtu ? "1" : "0"));
+            L.Add("WeakShowIndicator=" + (WeakShowIndicator ? "1" : "0"));
+            L.Add("WeakIndicatorX=" + WeakIndicatorX);
+            L.Add("WeakIndicatorY=" + WeakIndicatorY);
+            L.Add("WeakActive=" + (WeakActive ? "1" : "0"));
+            L.Add("WeakPolicyName=" + (WeakPolicyName == null ? "" : WeakPolicyName));
+            L.Add("WeakMtuRecords=" + (WeakMtuRecords == null ? "" : WeakMtuRecords));
             L.Add("ProfileCount=" + Profiles.Count);
 
             for (int i = 0; i < Profiles.Count; i++)

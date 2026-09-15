@@ -30,6 +30,9 @@ namespace ScreenCrosshair
         public uint FreeMod;       // 自由倒计时
         public uint FreeKey;
         public bool FreeOn;
+        public uint WeakMod;       // 弱网开关
+        public uint WeakKey;
+        public bool WeakOn;
         public int FreeCountdownSeconds;
         public int CountdownFontSize;
         public int CountdownRightOffset;
@@ -47,6 +50,15 @@ namespace ScreenCrosshair
 
         public bool AutoHide;      // 前台窗口不是游戏时自动隐藏
         public string GameExe;     // 目标进程名，不含 .exe
+        public string WeakGameExe; // QoS 限速匹配的进程文件名
+        public int WeakLevel;
+        public bool WeakUseMtu;
+        public bool WeakShowIndicator;
+        public int WeakIndicatorX;
+        public int WeakIndicatorY;
+        public bool WeakActive;
+        public string WeakPolicyName;
+        public string WeakMtuRecords;
         public int WindowX;
         public int WindowY;
 
@@ -72,6 +84,9 @@ namespace ScreenCrosshair
             FreeMod = Native.MOD_ALT;
             FreeKey = (uint)Keys.F3;
             FreeOn = true;
+            WeakMod = Native.MOD_CONTROL | Native.MOD_SHIFT;
+            WeakKey = (uint)Keys.W;
+            WeakOn = true;
             FreeCountdownSeconds = 60;
             CountdownFontSize = 28;
             CountdownRightOffset = 18;
@@ -84,10 +99,19 @@ namespace ScreenCrosshair
             HudOpacity = 78;
             HudShowPlate = true;
             HudShowMarkers = true;
-            ShowClock = true;
+            ShowClock = false;
             ClockSeconds = true;
             AutoHide = false;
             GameExe = "";
+            WeakGameExe = "";
+            WeakLevel = 3;
+            WeakUseMtu = true;
+            WeakShowIndicator = false;
+            WeakIndicatorX = -32768;
+            WeakIndicatorY = -32768;
+            WeakActive = false;
+            WeakPolicyName = "";
+            WeakMtuRecords = "";
             WindowX = -32768;
             WindowY = -32768;
         }
@@ -116,15 +140,16 @@ namespace ScreenCrosshair
         public const int HotEvacuation = 2;
         public const int HotRocket = 3;
         public const int HotFree = 4;
-        public const int HotCount = 5;
+        public const int HotWeak = 5;
+        public const int HotCount = 6;
 
         /// <summary>「热键」页每一行左边的名字</summary>
         public static readonly string[] HotNames =
-            { "显示 / 隐藏全部", "切换下一预设", "撤离点 5:00", "火箭 4:30", "自由倒计时" };
+            { "显示 / 隐藏全部", "切换下一预设", "撤离点 5:00", "火箭 4:30", "自由倒计时", "弱网开关" };
 
         /// <summary>状态行里列举注册失败的项时用的短名</summary>
         public static readonly string[] HotShort =
-            { "显隐", "切预设", "撤离点", "火箭", "自由" };
+            { "显隐", "切预设", "撤离点", "火箭", "自由", "弱网" };
 
         public uint HotMod(int i)
         {
@@ -134,7 +159,8 @@ namespace ScreenCrosshair
                 case HotSwitch: return SwitchMod;
                 case HotEvacuation: return EvacuationMod;
                 case HotRocket: return RocketMod;
-                default: return FreeMod;
+                case HotFree: return FreeMod;
+                default: return WeakMod;
             }
         }
 
@@ -146,7 +172,8 @@ namespace ScreenCrosshair
                 case HotSwitch: return SwitchKey;
                 case HotEvacuation: return EvacuationKey;
                 case HotRocket: return RocketKey;
-                default: return FreeKey;
+                case HotFree: return FreeKey;
+                default: return WeakKey;
             }
         }
 
@@ -158,7 +185,8 @@ namespace ScreenCrosshair
                 case HotSwitch: return SwitchOn;
                 case HotEvacuation: return EvacuationOn;
                 case HotRocket: return RocketOn;
-                default: return FreeOn;
+                case HotFree: return FreeOn;
+                default: return WeakOn;
             }
         }
 
@@ -170,7 +198,8 @@ namespace ScreenCrosshair
                 case HotSwitch: SwitchMod = mod; SwitchKey = key; break;
                 case HotEvacuation: EvacuationMod = mod; EvacuationKey = key; break;
                 case HotRocket: RocketMod = mod; RocketKey = key; break;
-                default: FreeMod = mod; FreeKey = key; break;
+                case HotFree: FreeMod = mod; FreeKey = key; break;
+                default: WeakMod = mod; WeakKey = key; break;
             }
         }
 
@@ -182,7 +211,8 @@ namespace ScreenCrosshair
                 case HotSwitch: SwitchOn = on; break;
                 case HotEvacuation: EvacuationOn = on; break;
                 case HotRocket: RocketOn = on; break;
-                default: FreeOn = on; break;
+                case HotFree: FreeOn = on; break;
+                default: WeakOn = on; break;
             }
         }
 
@@ -255,6 +285,9 @@ namespace ScreenCrosshair
             FreeMod = (uint)IniBag.I(app, "FreeMod", (int)Native.MOD_ALT, 0, 15);
             FreeKey = (uint)IniBag.I(app, "FreeKey", (int)Keys.F3, 1, 255);
             FreeOn = IniBag.B(app, "FreeOn", true);
+            WeakMod = (uint)IniBag.I(app, "WeakMod", (int)(Native.MOD_CONTROL | Native.MOD_SHIFT), 0, 15);
+            WeakKey = (uint)IniBag.I(app, "WeakKey", (int)Keys.W, 1, 255);
+            WeakOn = IniBag.B(app, "WeakOn", true);
             FreeCountdownSeconds = IniBag.I(app, "FreeCountdownSeconds", 60, 1, 59999);
             CountdownFontSize = IniBag.I(app, "CountdownFontSize", 28, 14, 72);
             CountdownRightOffset = IniBag.I(app, "CountdownRightOffset", 18, 0, 9999);
@@ -267,10 +300,19 @@ namespace ScreenCrosshair
             HudOpacity = IniBag.I(app, "HudOpacity", 78, 20, 100);
             HudShowPlate = IniBag.B(app, "HudShowPlate", true);
             HudShowMarkers = IniBag.B(app, "HudShowMarkers", true);
-            ShowClock = IniBag.B(app, "ShowClock", true);
+            ShowClock = IniBag.B(app, "ShowClock", false);
             ClockSeconds = IniBag.B(app, "ClockSeconds", true);
             AutoHide = IniBag.B(app, "AutoHide", false);
             GameExe = IniBag.S(app, "GameExe", "");
+            WeakGameExe = IniBag.S(app, "WeakGameExe", "");
+            WeakLevel = IniBag.I(app, "WeakLevel", 3, 0, 3);
+            WeakUseMtu = IniBag.B(app, "WeakUseMtu", true);
+            WeakShowIndicator = IniBag.B(app, "WeakShowIndicator", false);
+            WeakIndicatorX = IniBag.I(app, "WeakIndicatorX", -32768, -32768, 32767);
+            WeakIndicatorY = IniBag.I(app, "WeakIndicatorY", -32768, -32768, 32767);
+            WeakActive = IniBag.B(app, "WeakActive", false);
+            WeakPolicyName = IniBag.S(app, "WeakPolicyName", "");
+            WeakMtuRecords = IniBag.S(app, "WeakMtuRecords", "");
             WindowX = IniBag.I(app, "WindowX", -32768, -32768, 32767);
             WindowY = IniBag.I(app, "WindowY", -32768, -32768, 32767);
 

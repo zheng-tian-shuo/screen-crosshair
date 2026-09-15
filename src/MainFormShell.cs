@@ -62,7 +62,7 @@ namespace ScreenCrosshair
                 _pages[k].Visible = (k == i);
                 _tabs[k].SetActive(k == i);
             }
-            _previewWrap.Visible = (i != PageHelp);
+            _previewWrap.Visible = (i != PageHelp && i != PageWeakNetwork);
             if (i == PageHelp) _pages[PageHelp].BringToFront();
             else _previewWrap.BringToFront();
         }

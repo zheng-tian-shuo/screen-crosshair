@@ -3,7 +3,7 @@ namespace ScreenCrosshair
     /// <summary>内置说明书。「说明」页直接渲染这段文本，不依赖外部 README 文件。</summary>
     public static class HelpText
     {
-        public const string Version = "v5.0";
+        public const string Version = "v6.0";
 
         /// <summary>程序名。窗口标题、托盘提示、配置文件表头都从这里取，改名只改这一处。</summary>
         public const string AppName = "得吃准星";

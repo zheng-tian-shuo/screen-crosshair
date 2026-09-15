@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace ScreenCrosshair
@@ -7,6 +8,7 @@ namespace ScreenCrosshair
     {
         private const int HkToggle = 0x0A71;
         private const int HkSwitch = 0x0A72;
+        private const int HkWeak = 0x0A76;
 
         private Timer _tick;
         private string _lastFg = "";   // 哨兵值，保证第一次 tick 一定重算一遍
@@ -14,7 +16,7 @@ namespace ScreenCrosshair
 
         /// <summary>顺序必须和 AppSettings.HotToggle…HotFree 一致</summary>
         private static readonly int[] HkIds =
-            { HkToggle, HkSwitch, HkEvacuation, HkRocket, HkFreeCountdown };
+            { HkToggle, HkSwitch, HkEvacuation, HkRocket, HkFreeCountdown, HkWeak };
 
         /// <summary>
         /// 全部注销再按启用状态重登。停用的那条只是跳过注册，组合键本身仍留在配置里。
@@ -29,10 +31,17 @@ namespace ScreenCrosshair
             {
                 if (!_cfg.HotEnabled(i)) continue;
                 onCount++;
-                bool ok = _cfg.HotKey(i) != 0 && Native.RegisterHotKey(Handle, HkIds[i],
-                    _cfg.HotMod(i) | Native.MOD_NOREPEAT, _cfg.HotKey(i));
+                uint key = _cfg.HotKey(i);
+                uint mod = _cfg.HotMod(i);
+                bool ok = key != 0 && Native.RegisterHotKey(Handle, HkIds[i],
+                    mod | Native.MOD_NOREPEAT, key);
                 if (ok) okCount++;
-                else bad += (bad.Length > 0 ? "、" : "") + AppSettings.HotShort[i];
+                else
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    string reason = error == 1409 ? "占用" : "错误 " + error;
+                    bad += (bad.Length > 0 ? "、" : "") + AppSettings.HotShort[i] + "（" + reason + "）";
+                }
             }
 
             if (_lblHotState != null)
@@ -40,7 +49,7 @@ namespace ScreenCrosshair
                 if (onCount == 0)
                 {
                     _lblHotState.ForeColor = Theme.TextFaint;
-                    _lblHotState.Text = "五条热键全部停用";
+                    _lblHotState.Text = AppSettings.HotCount + " 条热键全部停用";
                 }
                 else if (bad.Length == 0)
                 {
@@ -51,7 +60,7 @@ namespace ScreenCrosshair
                 else
                 {
                     _lblHotState.ForeColor = Theme.Warn;
-                    _lblHotState.Text = "被占用：" + bad + "，换个组合或先停用";
+                    _lblHotState.Text = "注册失败：" + bad + "，换个组合或先停用";
                 }
             }
             UpdateSideHint();
@@ -67,6 +76,7 @@ namespace ScreenCrosshair
                 if (id == HkEvacuation) { StartCountdown(0); return; }
                 if (id == HkRocket) { StartCountdown(1); return; }
                 if (id == HkFreeCountdown) { StartCountdown(2); return; }
+                if (id == HkWeak) { ToggleWeakNetworkFromHotkey(); return; }
             }
             base.WndProc(ref m);
         }

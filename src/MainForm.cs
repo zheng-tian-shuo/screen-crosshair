@@ -19,15 +19,16 @@ namespace ScreenCrosshair
 
         // 「位置」原来是独立一页，可它调的还是当前准星，和「准星」页一直分不清，
         // 现在整块并到「准星」页下半部分了
-        private static readonly string[] TabNames = { "准星", "倒计时", "预设", "热键", "说明" };
+        private static readonly string[] TabNames = { "准星", "倒计时", "预设", "热键", "灵魂出窍", "说明" };
 
         // 页序号统一走这几个常量，别再往代码里散落 0/1/2——之前删一页就得满地改数字
         private const int PageCrosshair = 0;
         private const int PageCountdown = 1;
         private const int PageProfiles = 2;
         private const int PageHotkeys = 3;
-        private const int PageHelp = 4;
-        private const int PageCount = 5;
+        private const int PageWeakNetwork = 4;
+        private const int PageHelp = 5;
+        private const int PageCount = 6;
 
         private const int WinW = 916;
         private const int WinH = 624;
@@ -46,6 +47,7 @@ namespace ScreenCrosshair
 
         private CountdownOverlayForm _countdownOverlay;
         private CountdownOverlayForm _clockOverlay;
+        private WeakStatusOverlayForm _weakIndicator;
         private readonly DateTime[] _countdownEnds = new DateTime[3];
         private readonly bool[] _countdownRunning = new bool[3];
         private Screen _countdownScreen;
@@ -63,6 +65,7 @@ namespace ScreenCrosshair
             BuildPageCountdown();
             BuildPageProfiles();
             BuildPageHotkeys();
+            BuildPageWeakNetwork();
             BuildPageHelp();
             BuildTray();
 
@@ -71,6 +74,7 @@ namespace ScreenCrosshair
             PushToUi();
             SelectPage(0);
             RegisterHotkeys();
+            RecoverWeakNetworkOnStart();
             StartTick();
         }
 

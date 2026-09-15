@@ -48,6 +48,8 @@ namespace ScreenCrosshair
                 PushHotkeysToUi();
                 _chkAuto.SetSilent(_cfg.AutoHide);
                 _tbGameExe.Text = _cfg.GameExe;
+                UpdateAdminModeButton();
+                PushWeakNetworkToUi();
 
                 FillProfileList();
                 PushCountdownToUi();
