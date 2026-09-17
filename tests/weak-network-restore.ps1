@@ -4,6 +4,14 @@ $exe = Get-Item (Join-Path (Split-Path $PSScriptRoot -Parent) 'build\* v6.0.exe'
 $assembly = [Reflection.Assembly]::LoadFile($exe.FullName)
 $type = $assembly.GetType('ScreenCrosshair.WeakNetworkOps')
 $builder = $type.GetMethod('BuildRestoreScript', [Reflection.BindingFlags]'Static,NonPublic')
+$policyName = $type.GetMethod('PolicyName', [Reflection.BindingFlags]'Static,NonPublic')
+
+$firstPolicy = $policyName.Invoke($null, @('Game.exe'))
+$secondPolicy = $policyName.Invoke($null, @('game.EXE'))
+if ($firstPolicy -ne $secondPolicy -or $firstPolicy -notmatch '^ScreenCrosshairWeak_[0-9A-F]{12}$') {
+    throw 'Policy name must be stable before Apply starts'
+}
+Write-Host 'PASS stable-policy-name'
 
 function Get-NetQosPolicy {
     [CmdletBinding()] param($PolicyStore)

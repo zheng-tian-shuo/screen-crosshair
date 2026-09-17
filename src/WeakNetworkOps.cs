@@ -150,7 +150,7 @@ namespace ScreenCrosshair
             return script.ToString();
         }
 
-        private static string PolicyName(string exeName)
+        internal static string PolicyName(string exeName)
         {
             using (MD5 md5 = MD5.Create())
             {
