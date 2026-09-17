@@ -16,14 +16,34 @@ namespace ScreenCrosshair
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint |
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw |
-                     ControlStyles.SupportsTransparentBackColor, true);
+                     ControlStyles.SupportsTransparentBackColor | ControlStyles.Selectable, true);
             BackColor = Color.Transparent;
             Height = 22;
             Cursor = Cursors.Hand;
+            TabStop = true;
         }
 
-        public int Min { get { return _min; } set { _min = value; Invalidate(); } }
-        public int Max { get { return _max; } set { _max = value; Invalidate(); } }
+        public int Min
+        {
+            get { return _min; }
+            set
+            {
+                _min = value;
+                if (_max < _min) _max = _min;
+                SetSilent(_val);
+            }
+        }
+
+        public int Max
+        {
+            get { return _max; }
+            set
+            {
+                _max = value;
+                if (_min > _max) _min = _max;
+                SetSilent(_val);
+            }
+        }
 
         public int Value
         {
@@ -63,7 +83,7 @@ namespace ScreenCrosshair
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left) { _drag = true; Pick(e.X); }
+            if (Enabled && e.Button == MouseButtons.Left) { Focus(); _drag = true; Pick(e.X); }
             base.OnMouseDown(e);
         }
 
@@ -78,8 +98,54 @@ namespace ScreenCrosshair
 
         protected override void OnMouseWheel(MouseEventArgs e)
         {
-            // 滚轮只用于页面滚动，滑块数值只能通过鼠标拖动调整。
-            return;
+            // 滑块的滚轮不改数值，但焦点落在滑块上时仍要让设置页能继续滚动。
+            ScrollableControl scroll = Parent as ScrollableControl;
+            Control parent = Parent;
+            while (scroll == null && parent != null)
+            {
+                parent = parent.Parent;
+                scroll = parent as ScrollableControl;
+            }
+            if (scroll != null && scroll.VerticalScroll.Visible)
+            {
+                int lines = SystemInformation.MouseWheelScrollLines;
+                if (lines < 1) lines = 3;
+                int change = Math.Max(Theme.S(12), scroll.VerticalScroll.SmallChange) * lines;
+                int max = Math.Max(scroll.VerticalScroll.Minimum,
+                    scroll.VerticalScroll.Maximum - scroll.VerticalScroll.LargeChange + 1);
+                int next = scroll.VerticalScroll.Value - Math.Sign(e.Delta) * change;
+                if (next < scroll.VerticalScroll.Minimum) next = scroll.VerticalScroll.Minimum;
+                if (next > max) next = max;
+                scroll.VerticalScroll.Value = next;
+            }
+            base.OnMouseWheel(e);
+        }
+
+        protected override void OnGotFocus(EventArgs e)
+        { Invalidate(); base.OnGotFocus(e); }
+
+        protected override void OnLostFocus(EventArgs e)
+        { _drag = false; Invalidate(); base.OnLostFocus(e); }
+
+        protected override bool IsInputKey(Keys keyData)
+        {
+            Keys key = keyData & Keys.KeyCode;
+            return key == Keys.Left || key == Keys.Right || key == Keys.Up || key == Keys.Down ||
+                key == Keys.Home || key == Keys.End || base.IsInputKey(keyData);
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            if (Enabled)
+            {
+                if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Down) Value--;
+                else if (e.KeyCode == Keys.Right || e.KeyCode == Keys.Up) Value++;
+                else if (e.KeyCode == Keys.Home) Value = Min;
+                else if (e.KeyCode == Keys.End) Value = Max;
+                else { base.OnKeyDown(e); return; }
+                e.Handled = true;
+            }
+            base.OnKeyDown(e);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -105,6 +171,9 @@ namespace ScreenCrosshair
             int inset = Theme.S(4);
             using (SolidBrush b = new SolidBrush(Theme.Window))
                 g.FillEllipse(b, kr.X + inset, kr.Y + inset, Knob - inset * 2, Knob - inset * 2);
+            if (Focused && Enabled)
+                using (Pen p = new Pen(Theme.AccentDim, 1f))
+                    g.DrawEllipse(p, kr);
         }
     }
 

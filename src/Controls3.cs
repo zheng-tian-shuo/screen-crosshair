@@ -15,11 +15,12 @@ namespace ScreenCrosshair
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint |
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw |
-                     ControlStyles.SupportsTransparentBackColor, true);
+                     ControlStyles.SupportsTransparentBackColor | ControlStyles.Selectable, true);
             BackColor = Color.Transparent;
             Font = Theme.Body;
             Cursor = Cursors.Hand;
             Height = 22;
+            TabStop = true;
         }
 
         public bool Checked
@@ -42,7 +43,7 @@ namespace ScreenCrosshair
 
         protected override void OnClick(EventArgs e)
         {
-            Checked = !_checked;
+            if (Enabled) Checked = !_checked;
             base.OnClick(e);
         }
 
@@ -51,6 +52,28 @@ namespace ScreenCrosshair
 
         protected override void OnMouseLeave(EventArgs e)
         { _hover = false; Invalidate(); base.OnMouseLeave(e); }
+
+        protected override void OnGotFocus(EventArgs e)
+        { Invalidate(); base.OnGotFocus(e); }
+
+        protected override void OnLostFocus(EventArgs e)
+        { Invalidate(); base.OnLostFocus(e); }
+
+        protected override bool IsInputKey(Keys keyData)
+        {
+            Keys key = keyData & Keys.KeyCode;
+            return key == Keys.Space || key == Keys.Enter || base.IsInputKey(keyData);
+        }
+
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            if (Enabled && (e.KeyCode == Keys.Space || e.KeyCode == Keys.Enter))
+            {
+                OnClick(EventArgs.Empty);
+                e.Handled = true;
+            }
+            base.OnKeyUp(e);
+        }
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -78,6 +101,10 @@ namespace ScreenCrosshair
                 Ui.FillRound(g, box, Theme.S(4), Theme.CardAlt);
                 Ui.DrawRound(g, box, Theme.S(4), _hover ? Theme.BorderLit : Theme.Border, 1f);
             }
+
+            if (Focused && Enabled)
+                Ui.DrawRound(g, new Rectangle(Math.Max(0, box.X - 2), Math.Max(0, box.Y - 2),
+                    box.Width + 4, box.Height + 4), Theme.S(5), Theme.AccentDim, 1f);
 
             int textX = boxSize + Theme.S(7);
             TextRenderer.DrawText(g, Text, Font,

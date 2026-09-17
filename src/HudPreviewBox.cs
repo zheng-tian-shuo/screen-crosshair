@@ -67,7 +67,8 @@ namespace ScreenCrosshair
                 using (SolidBrush b = new SolidBrush(Color.FromArgb((int)Math.Round(255 * _opacity / 100.0), 12, 14, 18)))
                     g.FillPath(b, p);
                 using (Pen p = new Pen(Color.FromArgb(170, Theme.BorderLit), Theme.S(1)))
-                    g.DrawPath(p, Ui.Round(r, Theme.S(9)));
+                using (GraphicsPath path = Ui.Round(r, Theme.S(9)))
+                    g.DrawPath(p, path);
             }
 
             int pad = Theme.S(14);

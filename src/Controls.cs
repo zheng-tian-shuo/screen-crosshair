@@ -16,11 +16,12 @@ namespace ScreenCrosshair
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint |
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw |
-                     ControlStyles.SupportsTransparentBackColor, true);
+                     ControlStyles.SupportsTransparentBackColor | ControlStyles.Selectable, true);
             BackColor = Color.Transparent;
             Font = Theme.Body;
             Cursor = Cursors.Hand;
             Height = 30;
+            TabStop = true;
         }
 
         protected override void OnMouseEnter(EventArgs e)
@@ -30,13 +31,54 @@ namespace ScreenCrosshair
         { _hover = false; _down = false; Invalidate(); base.OnMouseLeave(e); }
 
         protected override void OnMouseDown(MouseEventArgs e)
-        { _down = true; Invalidate(); base.OnMouseDown(e); }
+        {
+            if (Enabled && e.Button == MouseButtons.Left) { _down = true; Invalidate(); }
+            base.OnMouseDown(e);
+        }
 
         protected override void OnMouseUp(MouseEventArgs e)
-        { _down = false; Invalidate(); base.OnMouseUp(e); }
+        {
+            if (_down) { _down = false; Invalidate(); }
+            base.OnMouseUp(e);
+        }
 
         protected override void OnEnabledChanged(EventArgs e)
         { Invalidate(); base.OnEnabledChanged(e); }
+
+        protected override void OnGotFocus(EventArgs e)
+        { Invalidate(); base.OnGotFocus(e); }
+
+        protected override void OnLostFocus(EventArgs e)
+        { _down = false; Invalidate(); base.OnLostFocus(e); }
+
+        protected override bool IsInputKey(Keys keyData)
+        {
+            Keys key = keyData & Keys.KeyCode;
+            return key == Keys.Space || key == Keys.Enter || base.IsInputKey(keyData);
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            if (Enabled && (e.KeyCode == Keys.Space || e.KeyCode == Keys.Enter))
+            {
+                _down = true;
+                Invalidate();
+                e.Handled = true;
+            }
+            base.OnKeyDown(e);
+        }
+
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            if (_down && (e.KeyCode == Keys.Space || e.KeyCode == Keys.Enter))
+            {
+                _down = false;
+                Invalidate();
+                OnClick(EventArgs.Empty);
+                e.Handled = true;
+            }
+            base.OnKeyUp(e);
+        }
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -80,6 +122,10 @@ namespace ScreenCrosshair
                     using (Pen pen = new Pen(bd, 1f)) g.DrawPath(pen, p);
             }
 
+            if (Focused && Enabled)
+                Ui.DrawRound(g, new Rectangle(2, 2, Math.Max(0, Width - 5), Math.Max(0, Height - 5)),
+                    Theme.S(Math.Max(2, Radius - 2)), Theme.AccentDim, 1f);
+
             TextRenderer.DrawText(g, Text, Font, r, fg,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
                 TextFormatFlags.EndEllipsis);
@@ -96,11 +142,12 @@ namespace ScreenCrosshair
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint |
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw |
-                     ControlStyles.SupportsTransparentBackColor, true);
+                     ControlStyles.SupportsTransparentBackColor | ControlStyles.Selectable, true);
             BackColor = Color.Transparent;
             Font = Theme.TabFont;
             Cursor = Cursors.Hand;
             Height = 38;
+            TabStop = true;
         }
 
         public void SetActive(bool on)
@@ -115,6 +162,28 @@ namespace ScreenCrosshair
 
         protected override void OnMouseLeave(EventArgs e)
         { _hover = false; Invalidate(); base.OnMouseLeave(e); }
+
+        protected override void OnGotFocus(EventArgs e)
+        { Invalidate(); base.OnGotFocus(e); }
+
+        protected override void OnLostFocus(EventArgs e)
+        { Invalidate(); base.OnLostFocus(e); }
+
+        protected override bool IsInputKey(Keys keyData)
+        {
+            Keys key = keyData & Keys.KeyCode;
+            return key == Keys.Space || key == Keys.Enter || base.IsInputKey(keyData);
+        }
+
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            if (Enabled && (e.KeyCode == Keys.Space || e.KeyCode == Keys.Enter))
+            {
+                OnClick(EventArgs.Empty);
+                e.Handled = true;
+            }
+            base.OnKeyUp(e);
+        }
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -134,6 +203,10 @@ namespace ScreenCrosshair
             {
                 Ui.FillRound(g, r, Theme.S(5), Theme.Mix(Theme.Window, Color.White, 0.05));
             }
+
+            if (Focused && Enabled)
+                Ui.DrawRound(g, new Rectangle(2, 2, Math.Max(0, Width - 5), Math.Max(0, Height - 5)),
+                    Theme.S(4), Theme.AccentDim, 1f);
 
             TextRenderer.DrawText(g, Text, Font,
                 new Rectangle(Theme.S(18), 0, Width - Theme.S(24), Height),
