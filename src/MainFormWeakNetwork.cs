@@ -23,7 +23,7 @@ namespace ScreenCrosshair
         private void BuildPageWeakNetwork()
         {
             Panel pg = _pages[PageWeakNetwork];
-            Card c = NewCard(pg, "灵魂出窍（仅作用于指定应用）", 14, 340);
+            Card c = NewCard(pg, "灵魂出窍（仅作用于指定应用）", 14, 366);
 
             Ui.L(c, "应用进程", Theme.Body, Theme.TextMuted, 14, 44, 62, 20);
             _tbWeakExe = Ui.Box(c, 78, 40, 214);
@@ -66,9 +66,9 @@ namespace ScreenCrosshair
             _btnWeakOff.Click += delegate { StopWeakNetwork(false); };
             c.Controls.Add(_btnWeakOff);
 
-            _lblWeakState = Ui.L(c, "", Theme.Small, Theme.TextMuted, 14, 238, 414, 30);
+            _lblWeakState = Ui.L(c, "", Theme.Small, Theme.TextMuted, 14, 238, 414, 54);
             Ui.L(c, "使用 Windows 临时 QoS 策略限制出站带宽。需要管理员权限；\n程序退出或下次启动会尝试恢复网络。",
-                Theme.Small, Theme.TextFaint, 14, 278, 414, 40);
+                Theme.Small, Theme.TextFaint, 14, 304, 414, 40);
         }
 
         private void PushWeakNetworkToUi()
@@ -78,6 +78,7 @@ namespace ScreenCrosshair
             _cbWeakLevel.SelectedIndex = Math.Max(0, Math.Min(WeakNetworkOps.Profiles.Length - 1, _cfg.WeakLevel));
             _chkWeakMtu.SetSilent(_cfg.WeakUseMtu);
             _chkWeakIndicator.SetSilent(_cfg.WeakShowIndicator);
+            UpdateWeakControls();
             SyncWeakIndicator();
             UpdateWeakState(HasWeakRecoveryState() ? "弱网已开启或等待恢复。" : "弱网未开启。");
         }
@@ -91,6 +92,17 @@ namespace ScreenCrosshair
             _cfg.WeakShowIndicator = _chkWeakIndicator.Checked;
             SaveSoon();
             SyncWeakIndicator();
+        }
+
+        private void UpdateWeakControls()
+        {
+            // Changing these after Apply only changes the saved UI setting; it cannot
+            // change an already-created Windows policy. Lock them until restoration.
+            bool locked = _weakBusy || HasWeakRecoveryState();
+            if (_tbWeakExe != null) _tbWeakExe.Enabled = !locked;
+            if (_cbWeakLevel != null) _cbWeakLevel.Enabled = !locked;
+            if (_chkWeakMtu != null) _chkWeakMtu.Enabled = !locked;
+            if (_btnWeakGrab != null) _btnWeakGrab.Enabled = !locked;
         }
 
         private void StartWeakProcessGrab()
@@ -225,7 +237,7 @@ namespace ScreenCrosshair
         {
             if (!_cfg.WeakActive && string.IsNullOrEmpty(_cfg.WeakPolicyName) && string.IsNullOrEmpty(_cfg.WeakMtuRecords)) return;
             if (!WeakNetworkOps.IsAdministrator()) return;
-            _weakBusy = true;
+            SetWeakBusy(true, "正在恢复上次残留的弱网状态…");
             _weakOperationDone.Reset();
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -264,6 +276,7 @@ namespace ScreenCrosshair
             _weakBusy = busy;
             if (_btnWeakOn != null) _btnWeakOn.Enabled = !busy;
             if (_btnWeakOff != null) _btnWeakOff.Enabled = !busy;
+            UpdateWeakControls();
             SyncWeakIndicator();
             UpdateWeakState(state);
         }
