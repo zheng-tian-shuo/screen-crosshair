@@ -72,7 +72,8 @@ namespace ScreenCrosshair
         private string ItemLabel(int i)
         {
             CrosshairItemSettings it = _cfg.Items[i];
-            return (i + 1) + ". " + Shapes.NameOf(it.Shape) + (it.Visible ? "" : "（已关）");
+            string name = string.IsNullOrEmpty(it.Name) ? Shapes.NameOf(it.Shape) : it.Name;
+            return (i + 1) + ". " + name + (it.Visible ? "" : "（已关）");
         }
 
         private void FillItemCombo()
@@ -170,6 +171,17 @@ namespace ScreenCrosshair
                 };
             }
             _toast.Text = msg;
+            int pad = Theme.S(12);
+            int width = Math.Min(ClientSize.Width - Theme.S(32),
+                Math.Max(Theme.S(320), TextRenderer.MeasureText(msg, _toast.Font).Width + pad * 2));
+            Size textSize = TextRenderer.MeasureText(msg, _toast.Font,
+                new Size(width - pad * 2, int.MaxValue), TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix);
+            int height = Math.Max(Theme.S(30), textSize.Height + pad * 2);
+            _toast.UseMnemonic = false;
+            _toast.Padding = new Padding(pad);
+            _toast.Bounds = new Rectangle((ClientSize.Width - width) / 2,
+                ClientSize.Height - height - Theme.S(16), width, height);
+            _toastTimer.Interval = Math.Max(2500, Math.Min(8000, msg.Length * 100));
             _toast.Visible = true;
             _toast.BringToFront();
             _toastTimer.Stop();

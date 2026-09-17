@@ -175,11 +175,11 @@ namespace ScreenCrosshair
             EventHandler onChange, out Label valLabel)
         {
             int x = (c.Width - 410) / 2;
-            Ui.L(c, caption, Theme.Body, Theme.TextMuted, x, y + 2, 50, 20);
+            Ui.L(c, caption, Theme.Body, Theme.TextMuted, x, y + 2, 86, 20);
             Slider s = new Slider();
             s.Min = min;
             s.Max = max;
-            s.Bounds = new Rectangle(x + 62, y, 258, 22);
+            s.Bounds = new Rectangle(x + 94, y, 226, 22);
             s.ValueChanged += onChange;
             c.Controls.Add(s);
             valLabel = Ui.L(c, "", Theme.Mono, Theme.Accent, x + 326, y + 2, 84, 20);

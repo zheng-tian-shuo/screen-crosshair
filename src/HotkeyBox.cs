@@ -16,7 +16,7 @@ namespace ScreenCrosshair
             BorderStyle = BorderStyle.None;
             BackColor = Theme.CardAlt;
             ForeColor = Theme.Text;
-            Font = Theme.Body;
+            Font = Theme.Mono;
             ReadOnly = true;
             TabStop = true;
             ShortcutsEnabled = false;

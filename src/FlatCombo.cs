@@ -22,7 +22,11 @@ namespace ScreenCrosshair
         {
             // ComboBox 可能在进入 OnMouseWheel 前就由原生控件处理滚轮，
             // 所以这里也要拦截 Windows 消息，确保展开下拉列表时同样只能点击选择。
-            if (m.Msg == WM_MOUSEWHEEL) return;
+            if (m.Msg == WM_MOUSEWHEEL)
+            {
+                if (!DroppedDown) Ui.ScrollPage(this, (short)((m.WParam.ToInt64() >> 16) & 0xffff));
+                return;
+            }
             base.WndProc(ref m);
         }
     }

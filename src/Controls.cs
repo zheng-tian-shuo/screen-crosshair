@@ -19,6 +19,7 @@ namespace ScreenCrosshair
                      ControlStyles.SupportsTransparentBackColor | ControlStyles.Selectable, true);
             BackColor = Color.Transparent;
             Font = Theme.Body;
+            ForeColor = Theme.Text;
             Cursor = Cursors.Hand;
             Height = 30;
             TabStop = true;
@@ -96,7 +97,7 @@ namespace ScreenCrosshair
                 case 3:
                     bg = Color.Transparent; fg = Theme.TextMuted; bd = Color.Transparent; break;
                 default:
-                    bg = Theme.CardAlt; fg = Theme.Text; bd = Theme.Border; break;
+                    bg = Theme.CardAlt; fg = ForeColor; bd = Theme.Border; break;
             }
 
             if (!Enabled)

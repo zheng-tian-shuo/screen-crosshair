@@ -29,10 +29,10 @@ namespace ScreenCrosshair
         private const int PageWeakNetwork = 4;
         private const int PageCount = 5;
 
-        private const int WinW = 916;
+        private const int WinW = 816;
         private const int WinH = 624;
         private const int BarH = 52;
-        private const int SideW = 168;
+        private const int SideW = 156;
 
         private FlatBtn _pillGlobal;
         private SideTab[] _tabs;
@@ -120,6 +120,17 @@ namespace ScreenCrosshair
                     Region = new Region(p);
             }
             catch { }
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            EnsureWindowVisible();
+            base.OnShown(e);
+        }
+
+        private void EnsureWindowVisible()
+        {
+            Location = Ui.KeepWindowVisible(Bounds, Screen.FromRectangle(Bounds).WorkingArea);
         }
 
         /// <summary>

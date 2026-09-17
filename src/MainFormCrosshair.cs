@@ -41,6 +41,7 @@ namespace ScreenCrosshair
             _pgCards.Add(c1);
             Ui.L(c1, "当前", Theme.Body, Theme.TextMuted, 14, 42, 50, 20);
             _cbItem = Ui.Combo(c1, 68, 39, 148);
+            _cbItem.DropDownWidth = Theme.S(320);
             _cbItem.SelectedIndexChanged += ItemPicked;
 
             FlatBtn add = new FlatBtn();

@@ -8,6 +8,31 @@ namespace ScreenCrosshair
     /// <summary>界面绘制与布局的小工具</summary>
     public static class Ui
     {
+        // Cards are Panels too; keep walking until we find the page that actually scrolls.
+        public static bool ScrollPage(Control source, int delta)
+        {
+            if (delta == 0) return false;
+            for (Control p = source.Parent; p != null; p = p.Parent)
+            {
+                ScrollableControl page = p as ScrollableControl;
+                if (page == null || !page.AutoScroll || !page.VerticalScroll.Visible) continue;
+                int lines = SystemInformation.MouseWheelScrollLines;
+                int step = lines < 0 ? page.ClientSize.Height : Theme.S(24) * lines;
+                int max = Math.Max(0, page.VerticalScroll.Maximum - page.VerticalScroll.LargeChange + 1);
+                int next = Math.Max(0, Math.Min(max,
+                    -page.AutoScrollPosition.Y - (int)Math.Round(delta / 120.0 * step)));
+                page.AutoScrollPosition = new Point(-page.AutoScrollPosition.X, next);
+                return true;
+            }
+            return false;
+        }
+
+        public static Point KeepWindowVisible(Rectangle window, Rectangle area)
+        {
+            return new Point(Math.Max(area.Left, Math.Min(window.Left, area.Right - window.Width)),
+                Math.Max(area.Top, Math.Min(window.Top, area.Bottom - window.Height)));
+        }
+
         public static GraphicsPath Round(Rectangle r, int rad)
         {
             GraphicsPath p = new GraphicsPath();
@@ -51,6 +76,7 @@ namespace ScreenCrosshair
             l.ForeColor = c;
             l.BackColor = Color.Transparent;
             l.AutoSize = false;
+            l.UseMnemonic = false;
             l.Bounds = new Rectangle(x, y, w, h);
             parent.Controls.Add(l);
             return l;
@@ -103,12 +129,21 @@ namespace ScreenCrosshair
         public static HotkeyBox Hotkey(Control parent, int x, int y, int w)
         {
             Panel wrap = new Panel();
-            wrap.Bounds = new Rectangle(x, y, w, 24);
+            wrap.Bounds = new Rectangle(x, y, w, 28);
             wrap.BackColor = Theme.CardAlt;
-            wrap.Paint += BoxFrame;
+            // A single filled key field, without a second rectangular outline.
+            wrap.Paint += delegate(object sender, PaintEventArgs e)
+            {
+                if (wrap.ContainsFocus)
+                    using (Pen pen = new Pen(Theme.Accent, Theme.S(2)))
+                        e.Graphics.DrawLine(pen, Theme.S(6), wrap.Height - Theme.S(2),
+                            wrap.Width - Theme.S(6), wrap.Height - Theme.S(2));
+            };
             parent.Controls.Add(wrap);
 
             HotkeyBox t = new HotkeyBox();
+            t.Enter += delegate { wrap.Invalidate(); };
+            t.Leave += delegate { wrap.Invalidate(); };
             wrap.Controls.Add(t);
             EventHandler fit = delegate { FitBox(wrap, t); };
             wrap.Resize += fit;
@@ -178,7 +213,8 @@ namespace ScreenCrosshair
                 int pad = Theme.S(4);
                 TextRenderer.DrawText(e.Graphics, s, Theme.Body,
                     new Rectangle(e.Bounds.X + pad, e.Bounds.Y, e.Bounds.Width - pad, e.Bounds.Height),
-                    Theme.Text, TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
+                    Theme.Text, TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
+                    TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
             }
         }
     }

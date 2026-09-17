@@ -6,22 +6,22 @@ namespace ScreenCrosshair
     /// <summary>深色主题配色与字体。取色来自软件图标：黑金骷髅 + 白描边。</summary>
     public static class Theme
     {
-        public static readonly Color Window = Color.FromArgb(18, 19, 23);
-        public static readonly Color Card = Color.FromArgb(27, 29, 35);
-        public static readonly Color CardAlt = Color.FromArgb(37, 40, 48);
-        public static readonly Color Border = Color.FromArgb(54, 58, 68);
-        public static readonly Color BorderLit = Color.FromArgb(82, 88, 102);
-        public static readonly Color Text = Color.FromArgb(244, 245, 247);
-        public static readonly Color TextMuted = Color.FromArgb(181, 187, 198);
-        public static readonly Color TextFaint = Color.FromArgb(132, 140, 153);
+        public static readonly Color Window = Color.FromArgb(20, 23, 29);
+        public static readonly Color Card = Color.FromArgb(29, 33, 41);
+        public static readonly Color CardAlt = Color.FromArgb(39, 44, 54);
+        public static readonly Color Border = Color.FromArgb(49, 56, 68);
+        public static readonly Color BorderLit = Color.FromArgb(87, 99, 117);
+        public static readonly Color Text = Color.FromArgb(235, 239, 245);
+        public static readonly Color TextMuted = Color.FromArgb(185, 195, 209);
+        public static readonly Color TextFaint = Color.FromArgb(147, 160, 180);
 
         // 图标上的那点金色，整套界面的强调色都从它来
-        public static readonly Color Accent = Color.FromArgb(245, 190, 58);
+        public static readonly Color Accent = Color.FromArgb(232, 187, 94);
         public static readonly Color AccentDim = Color.FromArgb(176, 131, 28);
         public static readonly Color AccentDeep = Color.FromArgb(92, 68, 14);
         public static readonly Color Green = Color.FromArgb(122, 214, 138);
-        public static readonly Color Danger = Color.FromArgb(232, 84, 80);
-        public static readonly Color DangerDim = Color.FromArgb(112, 42, 42);
+        public static readonly Color Danger = Color.FromArgb(255, 153, 146);
+        public static readonly Color DangerDim = Color.FromArgb(65, 38, 43);
         // 金色已经占了强调位，警告改用橙红，免得两个黄互相打架
         public static readonly Color Warn = Color.FromArgb(255, 138, 60);
 
@@ -29,11 +29,11 @@ namespace ScreenCrosshair
 
         public static readonly Font Title = new Font(Face, 15f, FontStyle.Bold);
         public static readonly Font Sub = new Font(Face, 9f);
-        public static readonly Font Body = new Font(Face, 10f);
-        public static readonly Font BodyBold = new Font(Face, 10f, FontStyle.Bold);
+        public static readonly Font Body = new Font(Face, 9.5f);
+        public static readonly Font BodyBold = new Font(Face, 9.5f, FontStyle.Bold);
         public static readonly Font Small = new Font(Face, 9f);
         public static readonly Font SectionHead = new Font(Face, 10.5f, FontStyle.Bold);
-        public static readonly Font Mono = new Font("Consolas", 10f, FontStyle.Bold);
+        public static readonly Font Mono = new Font("Consolas", 10f);
         public static readonly Font TabFont = new Font(Face, 10f);
         public static readonly Font HelpBody = new Font(Face, 10f);
 

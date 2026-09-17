@@ -29,9 +29,11 @@ namespace ScreenCrosshair
         {
             Panel pg = _pages[PageHotkeys];
 
-            Card c1 = NewCard(pg, "全局热键（每条都能单独开关）", 14, 412);
+            Card c1 = NewCard(pg, "全局热键", 14, 444);
+            c1.Width = 560;
+            c1.Left = (_pageW - c1.Width) / 2;
 
-            const int GroupW = 468;
+            const int GroupW = 560;
             int groupX = (c1.Width - GroupW) / 2;
             int n = AppSettings.HotCount;
             _hkName = new Label[n];
@@ -45,15 +47,15 @@ namespace ScreenCrosshair
             for (int i = 0; i < n; i++)
             {
                 int slot = i;           // 闭包要抓住当前值，直接用 i 的话所有按钮都指向最后一行
-                int y = 44 + i * 34;
+                int y = 48 + i * 38;
 
                 _hkName[i] = Ui.L(c1, AppSettings.HotNames[i], Theme.Body, Theme.TextMuted,
                     groupX + 14, y + 2, 100, 20);
-                _hkCtrl[i] = ModChk(c1, "Ctrl", groupX + 116, y);
-                _hkAlt[i] = ModChk(c1, "Alt", _hkCtrl[i].Right + 4, y);
-                _hkShift[i] = ModChk(c1, "Shift", _hkAlt[i].Right + 4, y);
-                int keyX = _hkShift[i].Right + 8;
-                _hkKey[i] = Ui.Hotkey(c1, keyX, y - 3, 86);
+                _hkCtrl[i] = ModChk(c1, "Ctrl", groupX + 132, y);
+                _hkAlt[i] = ModChk(c1, "Alt", groupX + 200, y);
+                _hkShift[i] = ModChk(c1, "Shift", groupX + 260, y);
+                int keyX = groupX + 336;
+                _hkKey[i] = Ui.Hotkey(c1, keyX, y - 3, 94);
                 _hkTip.SetToolTip(_hkKey[i], "点击后直接按下键盘按键");
                 _hkKey[i].HotkeyChanged += delegate
                 {
@@ -63,13 +65,13 @@ namespace ScreenCrosshair
 
                 FlatBtn on = new FlatBtn();
                 on.Font = Theme.Small;
-                on.Bounds = new Rectangle(keyX + 92, y - 2, 60, 26);
+                on.Bounds = new Rectangle(groupX + 446, y - 3, 96, 28);
                 on.Click += delegate { ToggleHotEnabled(slot); };
                 c1.Controls.Add(on);
                 _hkOn[i] = on;
             }
 
-            int by = 44 + n * 34 + 6;
+            int by = 48 + n * 38 + 8;
 
             FlatBtn ap = new FlatBtn();
             ap.Kind = 1;
@@ -79,15 +81,15 @@ namespace ScreenCrosshair
             c1.Controls.Add(ap);
 
             _lblHotState = Ui.L(c1, "", Theme.Small, Theme.TextMuted,
-                groupX + 124, by + 4, 316, 20);
+                groupX + 124, by + 4, 418, 20);
 
             // 两句话手动断行：交给自动换行会把「说明别 / 的程序」这种词切成两截
             Ui.L(c1, "改完组合键要按「应用热键」；右边的开关按一下立刻生效。\n"
                     + "显示「被占用」说明这个组合被别的程序抢了，换一个或者把它停用。",
-                Theme.Small, Theme.TextFaint, groupX + 14, by + 38, 426, 34);
+                Theme.Small, Theme.TextFaint, groupX + 14, by + 38, 528, 38);
 
             Panel permissionSep = new Panel();
-            permissionSep.Bounds = new Rectangle(groupX + 14, by + 84, 426, 1);
+            permissionSep.Bounds = new Rectangle(groupX + 14, by + 84, 528, 1);
             permissionSep.BackColor = Theme.Border;
             c1.Controls.Add(permissionSep);
 
@@ -98,11 +100,13 @@ namespace ScreenCrosshair
             _btnAdminMode.Click += delegate { RestartAsAdministrator(); };
             c1.Controls.Add(_btnAdminMode);
             _lblAdminHint = Ui.L(c1, "", Theme.Small, Theme.TextFaint,
-                groupX + 276, by + 100, 164, 28);
+                groupX + 276, by + 100, 266, 28);
             _lblAdminHint.TextAlign = ContentAlignment.MiddleLeft;
 
             // ---- 自动显隐 ----
-            Card c2 = NewCard(pg, "跟着游戏自动显隐", 438, 150);
+            Card c2 = NewCard(pg, "跟着游戏自动显隐", 474, 150);
+            c2.Width = c1.Width;
+            c2.Left = c1.Left;
 
             _chkAuto = new Chk();
             _chkAuto.Text = "只在指定程序处于前台时显示准星";
@@ -140,7 +144,7 @@ namespace ScreenCrosshair
             if (_lblAdminHint != null)
             {
                 _lblAdminHint.Text = admin ? "管理员模式已启用" : "游戏中热键失效时，点此按钮";
-                _lblAdminHint.ForeColor = admin ? Theme.Green : Theme.Danger;
+                _lblAdminHint.ForeColor = admin ? Theme.Green : Theme.TextMuted;
             }
         }
 
@@ -218,7 +222,8 @@ namespace ScreenCrosshair
             if (_hkOn == null || _hkOn[i] == null) return;
             bool on = _cfg.HotEnabled(i);
             _hkOn[i].Text = on ? "已启用" : "已停用";
-            _hkOn[i].Kind = on ? 1 : 0;
+            _hkOn[i].Kind = 0;
+            _hkOn[i].ForeColor = on ? Theme.Green : Theme.TextFaint;
             _hkOn[i].Invalidate();
             _hkName[i].ForeColor = on ? Theme.TextMuted : Theme.TextFaint;
         }

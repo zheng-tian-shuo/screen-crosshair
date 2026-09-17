@@ -99,24 +99,10 @@ namespace ScreenCrosshair
         protected override void OnMouseWheel(MouseEventArgs e)
         {
             // 滑块的滚轮不改数值，但焦点落在滑块上时仍要让设置页能继续滚动。
-            ScrollableControl scroll = Parent as ScrollableControl;
-            Control parent = Parent;
-            while (scroll == null && parent != null)
+            if (Ui.ScrollPage(this, e.Delta))
             {
-                parent = parent.Parent;
-                scroll = parent as ScrollableControl;
-            }
-            if (scroll != null && scroll.VerticalScroll.Visible)
-            {
-                int lines = SystemInformation.MouseWheelScrollLines;
-                if (lines < 1) lines = 3;
-                int change = Math.Max(Theme.S(12), scroll.VerticalScroll.SmallChange) * lines;
-                int max = Math.Max(scroll.VerticalScroll.Minimum,
-                    scroll.VerticalScroll.Maximum - scroll.VerticalScroll.LargeChange + 1);
-                int next = scroll.VerticalScroll.Value - Math.Sign(e.Delta) * change;
-                if (next < scroll.VerticalScroll.Minimum) next = scroll.VerticalScroll.Minimum;
-                if (next > max) next = max;
-                scroll.VerticalScroll.Value = next;
+                HandledMouseEventArgs handled = e as HandledMouseEventArgs;
+                if (handled != null) handled.Handled = true;
             }
             base.OnMouseWheel(e);
         }
@@ -203,7 +189,7 @@ namespace ScreenCrosshair
             if (!string.IsNullOrEmpty(Caption))
             {
                 TextRenderer.DrawText(g, Caption, Theme.SectionHead,
-                    new Point(Theme.S(14), Theme.S(11)), Theme.Accent);
+                    new Point(Theme.S(14), Theme.S(9)), Theme.Text);
                 using (Pen p = new Pen(Theme.Border, 1f))
                     g.DrawLine(p, Theme.S(14), Theme.S(32), Width - Theme.S(15), Theme.S(32));
             }

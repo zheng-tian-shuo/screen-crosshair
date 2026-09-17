@@ -52,6 +52,7 @@ namespace ScreenCrosshair
         {
             if (!Visible) Show();
             if (WindowState != FormWindowState.Normal) WindowState = FormWindowState.Normal;
+            EnsureWindowVisible();
             Activate();
             BringToFront();
             PushToUi();
