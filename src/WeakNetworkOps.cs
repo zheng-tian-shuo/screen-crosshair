@@ -63,7 +63,7 @@ namespace ScreenCrosshair
 
             // Put QoS and MTU work in one PowerShell process. Cold-starting one per operation was the main toggle delay.
             string script = "$n='" + policyName + "';try {" +
-                "Get-NetQosPolicy -Name $n -PolicyStore ActiveStore -ErrorAction SilentlyContinue | Remove-NetQosPolicy -Confirm:$false -ErrorAction SilentlyContinue;" +
+                "if (Get-NetQosPolicy -PolicyStore ActiveStore -ErrorAction Stop | Where-Object {$_.Name -eq $n}) {Remove-NetQosPolicy -Name $n -PolicyStore ActiveStore -Confirm:$false -ErrorAction Stop};" +
                 "New-NetQosPolicy -Name $n -AppPathNameMatchCondition '" + exeName + "' -IPProtocolMatchCondition Both -NetworkProfile All -ThrottleRateActionBitsPerSecond " +
                 profile.BitsPerSecond.ToString(CultureInfo.InvariantCulture) +
                 " -PolicyStore ActiveStore -Confirm:$false -ErrorAction Stop | Out-Null;" +
@@ -101,17 +101,28 @@ namespace ScreenCrosshair
             return qosOk || mtuRecords.Length > 0;
         }
 
-        internal static void Restore(string policyName, string mtuRecords, out string log)
+        internal static bool Restore(string policyName, string mtuRecords, out string log)
         {
-            List<string> lines = new List<string>();
-            string output = "";
-            StringBuilder script = new StringBuilder();
-            bool hasPolicy = !string.IsNullOrEmpty(policyName);
+            string output;
+            bool ran = RunPowerShell(BuildRestoreScript(policyName, mtuRecords), out output);
+            bool ok = ran && Array.IndexOf(output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), "RESTORE|OK") >= 0;
+            log = ok ? "已确认临时 QoS 策略已清除，记录的网卡 MTU 已还原。"
+                : "网络尚未完全恢复，请再次点击关闭并还原。\n" + Short(output);
+            return ok;
+        }
+
+        internal static string BuildRestoreScript(string policyName, string mtuRecords)
+        {
+            StringBuilder script = new StringBuilder("$ok=$true;");
             if (!string.IsNullOrEmpty(policyName))
             {
-                script.Append("try {$n='").Append(policyName).Append("';Get-NetQosPolicy -Name $n -PolicyStore ActiveStore -ErrorAction SilentlyContinue | Remove-NetQosPolicy -Confirm:$false -ErrorAction SilentlyContinue;'QOSOK'} catch {'QOSERR'}; ");
+                // Query the store, not a missing name: absence is success, query failure is not.
+                script.Append("try {$n='").Append(policyName.Replace("'", "''")).Append("';")
+                    .Append("if (Get-NetQosPolicy -PolicyStore ActiveStore -ErrorAction Stop | Where-Object {$_.Name -eq $n}) {")
+                    .Append("Remove-NetQosPolicy -Name $n -PolicyStore ActiveStore -Confirm:$false -ErrorAction Stop;};")
+                    .Append("if (Get-NetQosPolicy -PolicyStore ActiveStore -ErrorAction Stop | Where-Object {$_.Name -eq $n}) {throw 'QoS policy still exists'}")
+                    .Append("} catch {$ok=$false; 'QOSERR|'+$_.Exception.Message};");
             }
-            bool hasMtu = !string.IsNullOrEmpty(mtuRecords);
             if (!string.IsNullOrEmpty(mtuRecords))
             {
                 string[] all = mtuRecords.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
@@ -119,23 +130,22 @@ namespace ScreenCrosshair
                 {
                     string[] part = all[i].Split('|');
                     int index, mtu;
-                    if (part.Length != 2 || !int.TryParse(part[0], out index) || !int.TryParse(part[1], out mtu)) continue;
+                    if (part.Length != 2 || !int.TryParse(part[0], out index) || !int.TryParse(part[1], out mtu) || index <= 0 || mtu <= 0)
+                    {
+                        script.Append("$ok=$false; 'MTUERR|Invalid recovery record';");
+                        continue;
+                    }
                     script.Append("try { Set-NetIPInterface -InterfaceIndex ").Append(index)
                         .Append(" -AddressFamily IPv4 -NlMtuBytes ").Append(mtu)
-                        .Append(" -PolicyStore ActiveStore -ErrorAction Stop; 'MTUOK' } catch { 'MTUERR' }; ");
+                        .Append(" -PolicyStore ActiveStore -ErrorAction Stop;")
+                        .Append("$i=Get-NetIPInterface -InterfaceIndex ").Append(index)
+                        .Append(" -AddressFamily IPv4 -PolicyStore ActiveStore -ErrorAction Stop;")
+                        .Append("if (!$i -or $i.NlMtu -ne ").Append(mtu).Append(") {throw 'MTU verification failed'}")
+                        .Append("} catch {$ok=$false; 'MTUERR|'+$_.Exception.Message};");
                 }
             }
-            bool ran = script.Length > 0 && RunPowerShell(script.ToString(), out output);
-            if (hasPolicy)
-                lines.Add(ran && output.IndexOf("QOSOK", StringComparison.Ordinal) >= 0
-                    ? "已清除临时 QoS 限速策略。" : "QoS 策略清除失败：" + Short(output));
-            if (hasMtu)
-            {
-                int restored = ran ? output.Split(new[] { "MTUOK" }, StringSplitOptions.None).Length - 1 : 0;
-                lines.Add("已还原 " + restored + " 个网卡的 MTU。");
-            }
-            if (lines.Count == 0) lines.Add("没有检测到需要恢复的弱网状态。");
-            log = string.Join(Environment.NewLine, lines.ToArray());
+            script.Append("if ($ok) {'RESTORE|OK'}");
+            return script.ToString();
         }
 
         private static string PolicyName(string exeName)

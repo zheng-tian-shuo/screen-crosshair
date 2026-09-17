@@ -118,13 +118,25 @@ namespace ScreenCrosshair
         private void ToggleWeakNetworkFromHotkey()
         {
             if (_weakBusy) return;
-            if (_cfg.WeakActive) StopWeakNetwork(true);
+            if (HasWeakRecoveryState()) StopWeakNetwork(true);
             else StartWeakNetwork(true);
+        }
+
+        private bool HasWeakRecoveryState()
+        {
+            return _cfg.WeakActive || !string.IsNullOrEmpty(_cfg.WeakPolicyName) || !string.IsNullOrEmpty(_cfg.WeakMtuRecords);
+        }
+
+        private void SaveWeakRecoveryState()
+        {
+            // Recovery records must survive an unexpected exit, unlike ordinary UI preferences.
+            _cfg.Save();
+            _cfg.SaveToDisk();
         }
 
         private void StartWeakNetwork(bool fromHotkey)
         {
-            if (_weakBusy || _cfg.WeakActive) return;
+            if (_weakBusy || HasWeakRecoveryState()) return;
             string exe = _tbWeakExe == null ? _cfg.WeakGameExe : _tbWeakExe.Text.Trim();
             if (!WeakNetworkOps.IsSafeExeName(exe))
             {
@@ -152,7 +164,7 @@ namespace ScreenCrosshair
                         _cfg.WeakActive = true;
                         _cfg.WeakPolicyName = policy;
                         _cfg.WeakMtuRecords = records;
-                        SaveSoon();
+                        SaveWeakRecoveryState();
                         if (!fromHotkey) Toast("弱网已开启");
                     }
                     SetWeakBusy(false, ok ? "弱网已开启。\n" + log : "弱网开启失败。\n" + log);
@@ -168,15 +180,18 @@ namespace ScreenCrosshair
             ThreadPool.QueueUserWorkItem(delegate
             {
                 string log;
-                WeakNetworkOps.Restore(_cfg.WeakPolicyName, _cfg.WeakMtuRecords, out log);
+                bool ok = WeakNetworkOps.Restore(_cfg.WeakPolicyName, _cfg.WeakMtuRecords, out log);
                 BeginInvoke((MethodInvoker)delegate
                 {
-                    _cfg.WeakActive = false;
-                    _cfg.WeakPolicyName = "";
-                    _cfg.WeakMtuRecords = "";
-                    SaveSoon();
-                    if (!fromHotkey) Toast("网络已还原");
-                    SetWeakBusy(false, "弱网已关闭。\n" + log);
+                    if (ok)
+                    {
+                        _cfg.WeakActive = false;
+                        _cfg.WeakPolicyName = "";
+                        _cfg.WeakMtuRecords = "";
+                        SaveWeakRecoveryState();
+                        if (!fromHotkey) Toast("网络已还原");
+                    }
+                    SetWeakBusy(false, ok ? "弱网已关闭。\n" + log : "恢复失败，弱网仍可能生效。\n" + log);
                 });
             });
         }
@@ -189,11 +204,15 @@ namespace ScreenCrosshair
             ThreadPool.QueueUserWorkItem(delegate
             {
                 string log;
-                WeakNetworkOps.Restore(_cfg.WeakPolicyName, _cfg.WeakMtuRecords, out log);
+                bool ok = WeakNetworkOps.Restore(_cfg.WeakPolicyName, _cfg.WeakMtuRecords, out log);
                 BeginInvoke((MethodInvoker)delegate
                 {
-                    _cfg.WeakActive = false; _cfg.WeakPolicyName = ""; _cfg.WeakMtuRecords = ""; SaveSoon();
-                    SetWeakBusy(false, "已恢复上次残留的弱网状态。\n" + log);
+                    if (ok)
+                    {
+                        _cfg.WeakActive = false; _cfg.WeakPolicyName = ""; _cfg.WeakMtuRecords = ""; SaveWeakRecoveryState();
+                        SetWeakBusy(false, "已恢复上次残留的弱网状态。\n" + log);
+                    }
+                    else SetWeakBusy(false, "上次弱网状态恢复失败，请手动关闭并还原。\n" + log);
                 });
             });
         }
@@ -202,8 +221,11 @@ namespace ScreenCrosshair
         {
             if (!_cfg.WeakActive && string.IsNullOrEmpty(_cfg.WeakPolicyName) && string.IsNullOrEmpty(_cfg.WeakMtuRecords)) return;
             string log;
-            WeakNetworkOps.Restore(_cfg.WeakPolicyName, _cfg.WeakMtuRecords, out log);
-            _cfg.WeakActive = false; _cfg.WeakPolicyName = ""; _cfg.WeakMtuRecords = ""; _cfg.Save();
+            bool ok = WeakNetworkOps.Restore(_cfg.WeakPolicyName, _cfg.WeakMtuRecords, out log);
+            if (ok)
+            {
+                _cfg.WeakActive = false; _cfg.WeakPolicyName = ""; _cfg.WeakMtuRecords = ""; _cfg.Save();
+            }
         }
 
         private void SetWeakBusy(bool busy, string state)
