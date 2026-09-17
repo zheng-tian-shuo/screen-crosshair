@@ -1,6 +1,11 @@
 # Run after build/build.ps1. Mock cmdlets ensure this test never changes networking.
 $ErrorActionPreference = 'Stop'
-$exe = Get-Item (Join-Path (Split-Path $PSScriptRoot -Parent) 'build\* v6.0.exe')
+$buildDir = Join-Path (Split-Path $PSScriptRoot -Parent) 'build'
+$exe = Get-ChildItem -Path $buildDir -Filter '*.exe' |
+    Where-Object { $_.Name -like '* v6.*.exe' } |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+if (-not $exe) { throw "找不到构建产物：$buildDir\* v6.*.exe" }
 $assembly = [Reflection.Assembly]::LoadFile($exe.FullName)
 $type = $assembly.GetType('ScreenCrosshair.WeakNetworkOps')
 $builder = $type.GetMethod('BuildRestoreScript', [Reflection.BindingFlags]'Static,NonPublic')

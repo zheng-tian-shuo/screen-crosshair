@@ -1,1 +1,1 @@
-点击build/build.bat即可自动构建得吃准星.exe文件
+点击 `build/build.bat` 即可自动构建 `build/得吃准星 v6.1.exe`，生成的是单文件便携版。

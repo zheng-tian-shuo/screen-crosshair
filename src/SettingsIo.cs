@@ -58,16 +58,27 @@ namespace ScreenCrosshair
                 File.WriteAllLines(tmp, BuildLines().ToArray(), Encoding.UTF8);
                 if (File.Exists(path))
                 {
-                    File.Copy(tmp, path, true);
-                    File.Delete(tmp);
+                    // Replace the destination in one filesystem operation where possible.
+                    // A plain Copy briefly leaves a truncated settings.ini if the process is
+                    // interrupted halfway through the write.
+                    try
+                    {
+                        File.Replace(tmp, path, null);
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        File.Copy(tmp, path, true);
+                        File.Delete(tmp);
+                    }
+                    catch (IOException)
+                    {
+                        // File.Replace can fail on filesystems that do not support it (for
+                        // example some removable drives); retain the safe fallback.
+                        File.Copy(tmp, path, true);
+                        File.Delete(tmp);
+                    }
                 }
                 else File.Move(tmp, path);
-                try
-                {
-                    string oldBak = path + ".bak";
-                    if (File.Exists(oldBak)) File.Delete(oldBak);
-                }
-                catch { }
                 _savePending = false;
             }
             catch (Exception ex) { AppLog.Write("保存配置失败", ex); }
@@ -89,6 +100,9 @@ namespace ScreenCrosshair
             {
                 string[] lines = File.ReadAllLines(file, Encoding.UTF8);
                 ReadFrom(lines);
+                // Import changes the live settings just like editing a field in the UI.
+                // Mark it dirty so closing the app persists the imported configuration.
+                _savePending = true;
                 return true;
             }
             catch { return false; }
