@@ -29,7 +29,7 @@ namespace ScreenCrosshair
         private const int PageWeakNetwork = 4;
         private const int PageCount = 5;
 
-        private const int WinW = 816;
+        private const int WinW = 688;
         private const int WinH = 624;
         private const int BarH = 52;
         private const int SideW = 156;

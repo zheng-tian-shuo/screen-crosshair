@@ -30,10 +30,10 @@ namespace ScreenCrosshair
             Panel pg = _pages[PageHotkeys];
 
             Card c1 = NewCard(pg, "全局热键", 14, 444);
-            c1.Width = 560;
+            c1.Width = 496;
             c1.Left = (_pageW - c1.Width) / 2;
 
-            const int GroupW = 560;
+            const int GroupW = 496;
             int groupX = (c1.Width - GroupW) / 2;
             int n = AppSettings.HotCount;
             _hkName = new Label[n];
@@ -51,11 +51,11 @@ namespace ScreenCrosshair
 
                 _hkName[i] = Ui.L(c1, AppSettings.HotNames[i], Theme.Body, Theme.TextMuted,
                     groupX + 14, y + 2, 100, 20);
-                _hkCtrl[i] = ModChk(c1, "Ctrl", groupX + 132, y);
-                _hkAlt[i] = ModChk(c1, "Alt", groupX + 200, y);
-                _hkShift[i] = ModChk(c1, "Shift", groupX + 260, y);
-                int keyX = groupX + 336;
-                _hkKey[i] = Ui.Hotkey(c1, keyX, y - 3, 94);
+                _hkCtrl[i] = ModChk(c1, "Ctrl", groupX + 114, y);
+                _hkAlt[i] = ModChk(c1, "Alt", groupX + 178, y);
+                _hkShift[i] = ModChk(c1, "Shift", groupX + 234, y);
+                int keyX = groupX + 306;
+                _hkKey[i] = Ui.Hotkey(c1, keyX, y - 3, 80);
                 _hkTip.SetToolTip(_hkKey[i], "点击后直接按下键盘按键");
                 _hkKey[i].HotkeyChanged += delegate
                 {
@@ -65,7 +65,7 @@ namespace ScreenCrosshair
 
                 FlatBtn on = new FlatBtn();
                 on.Font = Theme.Small;
-                on.Bounds = new Rectangle(groupX + 446, y - 3, 96, 28);
+                on.Bounds = new Rectangle(groupX + 394, y - 3, 88, 28);
                 on.Click += delegate { ToggleHotEnabled(slot); };
                 c1.Controls.Add(on);
                 _hkOn[i] = on;
@@ -81,15 +81,15 @@ namespace ScreenCrosshair
             c1.Controls.Add(ap);
 
             _lblHotState = Ui.L(c1, "", Theme.Small, Theme.TextMuted,
-                groupX + 124, by + 4, 418, 20);
+                groupX + 124, by + 4, 358, 20);
 
             // 两句话手动断行：交给自动换行会把「说明别 / 的程序」这种词切成两截
             Ui.L(c1, "改完组合键要按「应用热键」；右边的开关按一下立刻生效。\n"
                     + "显示「被占用」说明这个组合被别的程序抢了，换一个或者把它停用。",
-                Theme.Small, Theme.TextFaint, groupX + 14, by + 38, 528, 38);
+                Theme.Small, Theme.TextFaint, groupX + 14, by + 38, 468, 38);
 
             Panel permissionSep = new Panel();
-            permissionSep.Bounds = new Rectangle(groupX + 14, by + 84, 528, 1);
+            permissionSep.Bounds = new Rectangle(groupX + 14, by + 84, 468, 1);
             permissionSep.BackColor = Theme.Border;
             c1.Controls.Add(permissionSep);
 
@@ -100,7 +100,7 @@ namespace ScreenCrosshair
             _btnAdminMode.Click += delegate { RestartAsAdministrator(); };
             c1.Controls.Add(_btnAdminMode);
             _lblAdminHint = Ui.L(c1, "", Theme.Small, Theme.TextFaint,
-                groupX + 276, by + 100, 266, 28);
+                groupX + 276, by + 100, 206, 28);
             _lblAdminHint.TextAlign = ContentAlignment.MiddleLeft;
 
             // ---- 自动显隐 ----
