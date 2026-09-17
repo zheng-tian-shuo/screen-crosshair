@@ -60,10 +60,10 @@ namespace ScreenCrosshair
         {
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             Rectangle r = new Rectangle(0, 0, Width - 1, Height - 1);
-            Color accent = _active ? Theme.Green : Theme.TextFaint;
+            Color accent = _active ? Theme.Hud.Green : Theme.Hud.TextFaint;
             using (GraphicsPath p = Ui.Round(r, Theme.S(7)))
-            using (SolidBrush bg = new SolidBrush(Theme.Card))
-            using (Pen border = new Pen(_active ? Theme.Green : Theme.Border, 1f))
+            using (SolidBrush bg = new SolidBrush(Theme.Hud.Card))
+            using (Pen border = new Pen(_active ? Theme.Hud.Green : Theme.Hud.Border, 1f))
             using (SolidBrush dot = new SolidBrush(accent))
             {
                 e.Graphics.FillPath(bg, p);
@@ -74,7 +74,7 @@ namespace ScreenCrosshair
             string text = "灵魂出窍  " + state;
             TextRenderer.DrawText(e.Graphics, text, Theme.Small,
                 new Rectangle(Theme.S(32), 0, Width - Theme.S(40), Height),
-                _active ? Theme.Text : Theme.TextMuted,
+                _active ? Theme.Hud.Text : Theme.Hud.TextMuted,
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
         }
 

@@ -52,6 +52,7 @@ namespace ScreenCrosshair
         public MainForm()
         {
             _cfg = AppSettings.Load();
+            Theme.SetLight(_cfg.LightTheme);
             InitWindow();
             BuildTitleBar();
             BuildSide();
@@ -180,6 +181,17 @@ namespace ScreenCrosshair
                 62, 31, 220, 16).MouseDown += BarDrag;
 
             _pillGlobal = new FlatBtn();
+            _themeDark = new FlatBtn();
+            _themeDark.Text = "深色";
+            _themeDark.Bounds = new Rectangle(WinW - 404, 13, 58, 26);
+            _themeDark.Click += delegate { SwitchTheme(false); };
+            bar.Controls.Add(_themeDark);
+            _themeLight = new FlatBtn();
+            _themeLight.Text = "浅色";
+            _themeLight.Bounds = new Rectangle(WinW - 340, 13, 58, 26);
+            _themeLight.Click += delegate { SwitchTheme(true); };
+            bar.Controls.Add(_themeLight);
+            UpdateThemeButtons();
             _pillGlobal.Bounds = new Rectangle(WinW - 268, 13, 152, 26);
             _pillGlobal.Click += delegate { ToggleGlobal(); };
             bar.Controls.Add(_pillGlobal);

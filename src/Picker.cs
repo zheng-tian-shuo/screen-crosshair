@@ -81,13 +81,13 @@ namespace ScreenCrosshair
             if (_m.X < 0) return;
 
             // 全屏十字线 + 中心小方框，方便对准爆点
-            using (Pen p = new Pen(Color.FromArgb(200, Theme.Accent), 1f))
+            using (Pen p = new Pen(Color.FromArgb(200, Theme.Hud.Accent), 1f))
             {
                 p.DashStyle = DashStyle.Dash;
                 g.DrawLine(p, 0, _m.Y, Width, _m.Y);
                 g.DrawLine(p, _m.X, 0, _m.X, Height);
             }
-            using (Pen p = new Pen(Color.FromArgb(230, Theme.Accent), 1f))
+            using (Pen p = new Pen(Color.FromArgb(230, Theme.Hud.Accent), 1f))
                 g.DrawRectangle(p, _m.X - 6, _m.Y - 6, 12, 12);
 
             Point sp = PointToScreen(_m);
@@ -103,10 +103,10 @@ namespace ScreenCrosshair
             Rectangle box = new Rectangle(bx, by, sz.Width + 20, sz.Height + 14);
             using (SolidBrush b = new SolidBrush(Color.FromArgb(235, 18, 20, 25)))
                 g.FillRectangle(b, box);
-            using (Pen p = new Pen(Theme.Accent, 1f))
+            using (Pen p = new Pen(Theme.Hud.Accent, 1f))
                 g.DrawRectangle(p, box);
             TextRenderer.DrawText(g, txt, Theme.BodyBold,
-                new Point(box.X + 10, box.Y + 7), Theme.Text);
+                new Point(box.X + 10, box.Y + 7), Theme.Hud.Text);
         }
 
         protected override void Dispose(bool disposing)

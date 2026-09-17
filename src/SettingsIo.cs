@@ -115,6 +115,7 @@ namespace ScreenCrosshair
             L.Add("# 纯文本，可以直接用记事本改；改坏某一行只会丢那一项，不影响其他设置。");
             L.Add("");
             L.Add("[app]");
+            L.Add("LightTheme=" + (LightTheme ? "1" : "0"));
             L.Add("GlobalVisible=" + (GlobalVisible ? "1" : "0"));
             L.Add("WindowX=" + WindowX);
             L.Add("WindowY=" + WindowY);

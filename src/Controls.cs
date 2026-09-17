@@ -91,7 +91,7 @@ namespace ScreenCrosshair
             switch (Kind)
             {
                 case 1:
-                    bg = Theme.Accent; fg = Color.FromArgb(20, 22, 26); bd = Theme.Accent; break;
+                    bg = Theme.Accent; fg = Theme.IsLight ? Color.White : Color.FromArgb(20, 22, 26); bd = Theme.Accent; break;
                 case 2:
                     bg = Theme.DangerDim; fg = Theme.Danger; bd = Color.FromArgb(150, 60, 64); break;
                 case 3:
@@ -202,7 +202,7 @@ namespace ScreenCrosshair
             }
             else if (_hover)
             {
-                Ui.FillRound(g, r, Theme.S(5), Theme.Mix(Theme.Window, Color.White, 0.05));
+                Ui.FillRound(g, r, Theme.S(5), Theme.Mix(Theme.Window, Theme.IsLight ? Color.Black : Color.White, 0.05));
             }
 
             if (Focused && Enabled)

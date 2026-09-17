@@ -29,14 +29,30 @@ public partial class MainForm {
             f.Opacity = 0;
             f.ShowInTaskbar = false;
             f.Show();
-            for (int page = 0; page < PageCount; page++) {
+            for (int theme = 0; theme < 2; theme++) {
+              f.SwitchTheme(theme == 1);
+              for (int page = 0; page < PageCount; page++) {
                 f.SelectPage(page);
                 Application.DoEvents();
                 using (Bitmap bitmap = new Bitmap(f.Width, f.Height)) {
                     f.DrawToBitmap(bitmap, f.ClientRectangle);
-                    bitmap.Save(Path.Combine(args[0], "page-" + page + ".png"), ImageFormat.Png);
+                    bitmap.Save(Path.Combine(args[0], (theme == 1 ? "light-" : "dark-") + "page-" + page + ".png"), ImageFormat.Png);
                 }
+              }
             }
+            f._tbFovTarget.Text = "107";
+            int selected = f._cbShape.SelectedIndex;
+            f.SwitchTheme(false);
+            f.SwitchTheme(true);
+            if (f._tbFovTarget.Text != "107" || f._cbShape.SelectedIndex != selected || f._page != PageWeakNetwork)
+                throw new Exception("Theme switch changed editing state or active page");
+            if (f.BackColor != Theme.Window || f._tbFovTarget.BackColor != Theme.CardAlt || f._tbFovTarget.ForeColor != Theme.Text)
+                throw new Exception("Theme switch left stale control colors");
+            foreach (Control c in f._pgCards[1].Controls)
+                if (c.Tag is Color && c.BackColor != (Color)c.Tag)
+                    throw new Exception("Theme switch changed a crosshair color swatch");
+            if (!f._cfg.BuildLines().Contains("LightTheme=1"))
+                throw new Exception("Theme preference was not serialized");
             for (int i = 0; i < f._hkKey.Length; i++) {
                 if (f._hkCtrl[i].Right > f._hkAlt[i].Left ||
                     f._hkAlt[i].Right > f._hkShift[i].Left ||
@@ -46,7 +62,7 @@ public partial class MainForm {
                 if (f._hkKey[i].BorderStyle != BorderStyle.None)
                     throw new Exception("Hotkey input has a native border");
             }
-            Console.WriteLine("PASS all hotkey columns fit; rendered five pages at DPI scale " + Theme.K);
+            Console.WriteLine("PASS theme switch preserves edits, page, swatches and preference; rendered both themes across five pages at DPI scale " + Theme.K);
         }
     }
 }}

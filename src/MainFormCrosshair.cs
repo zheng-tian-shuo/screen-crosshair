@@ -99,6 +99,13 @@ namespace ScreenCrosshair
                 sw.BackColor = Presets[i];
                 sw.Cursor = Cursors.Hand;
                 sw.Tag = Presets[i];
+                sw.Paint += delegate(object sender, PaintEventArgs e)
+                {
+                    if (!Theme.IsLight) return;
+                    Control chip = (Control)sender;
+                    using (Pen border = new Pen(Theme.BorderLit))
+                        e.Graphics.DrawRectangle(border, 0, 0, chip.Width - 1, chip.Height - 1);
+                };
                 sw.Click += SwatchClick;
                 c2.Controls.Add(sw);
             }

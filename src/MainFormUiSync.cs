@@ -13,6 +13,7 @@ namespace ScreenCrosshair
         /// <summary>把配置整体回填到界面。_loading 期间所有控件事件都被忽略。</summary>
         private void PushToUi()
         {
+            if (Theme.IsLight != _cfg.LightTheme) SwitchTheme(_cfg.LightTheme);
             _loading = true;
             try
             {

@@ -327,8 +327,8 @@ namespace ScreenCrosshair
                     float y = padY + i * (rowH + Theme.S(RowGap));
                     if (i > 0 && !string.IsNullOrEmpty(_items[0].Text)) y += Theme.S(ClockGap);
                     bool clock = !string.IsNullOrEmpty(it.Text);
-                    Color timeColor = clock ? Theme.TextMuted : TimeColor(it.RemainingSeconds);
-                    Color marker = clock ? Theme.BorderLit : timeColor;
+                    Color timeColor = clock ? Theme.Hud.TextMuted : TimeColor(it.RemainingSeconds);
+                    Color marker = clock ? Theme.Hud.BorderLit : timeColor;
 
                     if (!clock && _showMarkers)
                     {
@@ -337,14 +337,14 @@ namespace ScreenCrosshair
                     }
                     if (i > 0 && !clock)
                     {
-                        using (Pen p = new Pen(Color.FromArgb(80, Theme.BorderLit), 1f))
+                        using (Pen p = new Pen(Color.FromArgb(80, Theme.Hud.BorderLit), 1f))
                             g.DrawLine(p, pad, y - Theme.S(2), Width - pad, y - Theme.S(2));
                     }
                     if (!clockOnly && !clock)
                     {
                         OutlineText(g, it.Name, nf,
                             new RectangleF(pad + Theme.S(7), y, _nameW - Theme.S(7), rowH), nameSf,
-                            Theme.Text, nameRing);
+                            Theme.Hud.Text, nameRing);
                     }
                     OutlineText(g, ValueOf(it), tf,
                         new RectangleF(Width - pad - _timeW, y, _timeW, rowH), timeSf,
@@ -355,9 +355,9 @@ namespace ScreenCrosshair
 
         private static Color TimeColor(int seconds)
         {
-            if (seconds <= 10) return Theme.Danger;
-            if (seconds <= 60) return Theme.Warn;
-            return Theme.Accent;
+            if (seconds <= 10) return Theme.Hud.Danger;
+            if (seconds <= 60) return Theme.Hud.Warn;
+            return Theme.Hud.Accent;
         }
 
         private void DrawPanelBackground(Graphics g)
@@ -369,7 +369,7 @@ namespace ScreenCrosshair
             using (SolidBrush b = new SolidBrush(Color.FromArgb(alpha, 12, 14, 18)))
                 g.FillPath(b, p);
             using (GraphicsPath p = Ui.Round(r, Theme.S(IsClockOnly() ? 7 : 9)))
-            using (Pen pen = new Pen(Color.FromArgb(Math.Min(220, alpha + 30), Theme.BorderLit), Theme.S(1)))
+            using (Pen pen = new Pen(Color.FromArgb(Math.Min(220, alpha + 30), Theme.Hud.BorderLit), Theme.S(1)))
                 g.DrawPath(pen, p);
         }
 
@@ -380,9 +380,9 @@ namespace ScreenCrosshair
         private void DrawDragPlate(Graphics g)
         {
             using (GraphicsPath plate = Ui.Round(new Rectangle(0, 0, Width - 1, Height - 1), Theme.S(9)))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(62, Theme.Accent)))
+            using (SolidBrush b = new SolidBrush(Color.FromArgb(62, Theme.Hud.Accent)))
                 g.FillPath(b, plate);
-            using (Pen p = new Pen(Color.FromArgb(190, Theme.Accent), 1f))
+            using (Pen p = new Pen(Color.FromArgb(190, Theme.Hud.Accent), 1f))
             {
                 p.DashStyle = DashStyle.Dash;
                 using (GraphicsPath border = Ui.Round(new Rectangle(1, 1, Width - 3, Height - 3), Theme.S(8)))
@@ -396,7 +396,7 @@ namespace ScreenCrosshair
                 sf.Alignment = StringAlignment.Center;
                 sf.LineAlignment = StringAlignment.Center;
                 OutlineText(g, DragHint, f,
-                    new RectangleF(0, Height - hintH, Width, hintH), sf, Theme.Accent, 1.5f);
+                    new RectangleF(0, Height - hintH, Width, hintH), sf, Theme.Hud.Accent, 1.5f);
             }
         }
         /// <summary>

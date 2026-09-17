@@ -13,6 +13,7 @@ namespace ScreenCrosshair
         public int ActiveIndex;    // 当前预设
         public int SelectedItem;   // 界面上选中的准星
         public bool GlobalVisible;
+        public bool LightTheme;
 
         public uint ToggleMod;     // 显示/隐藏全部
         public uint ToggleKey;
@@ -69,6 +70,7 @@ namespace ScreenCrosshair
             ActiveIndex = 0;
             SelectedItem = 0;
             GlobalVisible = true;
+            LightTheme = false;
             ToggleMod = 0;
             ToggleKey = (uint)Keys.F8;
             ToggleOn = true;
@@ -315,6 +317,7 @@ namespace ScreenCrosshair
             WeakMtuRecords = IniBag.S(app, "WeakMtuRecords", "");
             WindowX = IniBag.I(app, "WindowX", -32768, -32768, 32767);
             WindowY = IniBag.I(app, "WindowY", -32768, -32768, 32767);
+            LightTheme = IniBag.B(app, "LightTheme", false);
 
             int pc = IniBag.I(app, "ProfileCount", 0, 0, 64);
             List<Profile> list = new List<Profile>();

@@ -41,9 +41,9 @@ namespace ScreenCrosshair
         /// 也保证像素 alpha 不为 0——分层窗口上全透明的像素是抓不住的。</summary>
         private void DrawDragHint(Graphics g, int w, int h)
         {
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(30, Theme.Accent)))
+            using (SolidBrush b = new SolidBrush(Color.FromArgb(30, Theme.Hud.Accent)))
                 g.FillRectangle(b, 0, 0, w, h);
-            using (Pen p = new Pen(Color.FromArgb(170, Theme.Accent), 1f))
+            using (Pen p = new Pen(Color.FromArgb(170, Theme.Hud.Accent), 1f))
             {
                 p.DashStyle = DashStyle.Dash;
                 g.DrawRectangle(p, 0.5f, 0.5f, w - 1.5f, h - 1.5f);
