@@ -464,6 +464,7 @@ namespace ScreenCrosshair
         private void StartCountdown(int index)
         {
             if (index < 0 || index > 2) return;
+            if (_countdownDragMode) ToggleCountdownDrag();
             int seconds = index == 0 ? 300 : (index == 1 ? 270 : _cfg.FreeCountdownSeconds);
             if (seconds < 1) seconds = 1;
             _countdownEnds[index] = DateTime.UtcNow.AddSeconds(seconds);

@@ -63,8 +63,11 @@ namespace ScreenCrosshair
                 return;
 
             _cfg.Profiles.RemoveAt(i);
-            if (_cfg.ActiveIndex >= _cfg.Profiles.Count) _cfg.ActiveIndex = _cfg.Profiles.Count - 1;
+            // Removing a profile before the active one shifts that active profile left by one.
+            // When the removed profile itself was active, keep the next profile at this index;
+            // only clamp when the old active profile was the final item.
             if (_cfg.ActiveIndex > i) _cfg.ActiveIndex--;
+            if (_cfg.ActiveIndex >= _cfg.Profiles.Count) _cfg.ActiveIndex = _cfg.Profiles.Count - 1;
             _cfg.SelectedItem = 0;
             RebuildOverlays();
             PushToUi();
