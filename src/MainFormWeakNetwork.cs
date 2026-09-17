@@ -76,7 +76,7 @@ namespace ScreenCrosshair
             _chkWeakMtu.SetSilent(_cfg.WeakUseMtu);
             _chkWeakIndicator.SetSilent(_cfg.WeakShowIndicator);
             SyncWeakIndicator();
-            UpdateWeakState(_cfg.WeakActive ? "弱网已开启。" : "弱网未开启。");
+            UpdateWeakState(HasWeakRecoveryState() ? "弱网已开启或等待恢复。" : "弱网未开启。");
         }
 
         private void WeakSettingsChanged(object sender, EventArgs e)
@@ -251,7 +251,7 @@ namespace ScreenCrosshair
                 if (_cfg.WeakIndicatorX != -32768 && _cfg.WeakIndicatorY != -32768)
                     _weakIndicator.Location = new Point(_cfg.WeakIndicatorX, _cfg.WeakIndicatorY);
             }
-            _weakIndicator.SetState(_cfg.WeakActive, _weakBusy);
+            _weakIndicator.SetState(HasWeakRecoveryState(), _weakBusy);
             _weakIndicator.ShowTopNoActivate();
         }
 

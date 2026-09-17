@@ -71,7 +71,7 @@ namespace ScreenCrosshair
                 "} catch {'QOS|ERR|' + $_.Exception.Message};";
             if (useMtu)
                 script += "$r=Get-NetIPInterface -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object {$_.ConnectionState -eq 'Connected' -and $_.InterfaceIndex -ne 1};" +
-                    "foreach($i in $r){if($i.NlMtu -gt " + profile.Mtu + "){$old=$i.NlMtu;try {Set-NetIPInterface -InterfaceIndex $i.InterfaceIndex -AddressFamily IPv4 -NlMtuBytes " + profile.Mtu + " -PolicyStore ActiveStore -ErrorAction Stop; 'MTU|'+$i.InterfaceIndex+'|'+$old} catch {'MTUERR|'+$i.InterfaceIndex}}}";
+                    "foreach($i in $r){if($i.NlMtu -gt " + profile.Mtu + "){$old=$i.NlMtu;try {Set-NetIPInterface -InterfaceIndex $i.InterfaceIndex -AddressFamily IPv4 -NlMtuBytes " + profile.Mtu + " -PolicyStore ActiveStore -ErrorAction Stop;$now=Get-NetIPInterface -InterfaceIndex $i.InterfaceIndex -AddressFamily IPv4 -PolicyStore ActiveStore -ErrorAction Stop;if(!$now -or $now.NlMtu -ne " + profile.Mtu + "){throw 'MTU verification failed'};'MTU|'+$i.InterfaceIndex+'|'+$old} catch {'MTUERR|'+$i.InterfaceIndex+'|'+$_.Exception.Message}}}";
             bool started = RunPowerShell(script, out output);
             bool qosOk = started && output.IndexOf("QOS|OK", StringComparison.Ordinal) >= 0;
             lines.Add(qosOk
@@ -91,9 +91,11 @@ namespace ScreenCrosshair
                         records.Add(index + "|" + original);
                 }
                 mtuRecords = string.Join(";", records.ToArray());
+                bool mtuErrors = output.IndexOf("MTUERR|", StringComparison.Ordinal) >= 0;
                 lines.Add(mtuRecords.Length > 0
                     ? "已临时降低 " + records.Count + " 个活动网卡的 MTU，关闭时会还原。"
-                    : (started ? "没有需要降低 MTU 的活动网卡。" : "MTU 调整失败：" + Short(output)));
+                    : (mtuErrors ? "MTU 调整失败：" + Short(output)
+                    : (started ? "没有需要降低 MTU 的活动网卡。" : "MTU 调整失败：" + Short(output))));
             }
             else lines.Add("未调整 MTU。");
 
