@@ -13,6 +13,7 @@ namespace ScreenCrosshair
 
         private void NewProfile()
         {
+            if (_cfg.Profiles.Count >= 64) { Toast("预设太多了"); return; }
             string n = AskForm.Ask(this, "新建预设",
                 "给这套准星起个名字，建议写地图 + 撤离点，比如「零号大坝 · 西门」", "新预设");
             if (n == null) return;

@@ -62,6 +62,8 @@ namespace ScreenCrosshair
             if (f == null) return;
             List<CrosshairItemSettings> list = _cfg.Items;
             int idx = list.IndexOf(f.Item);
+            if (idx < 0) return;
+            SaveSoon();
             if (idx >= 0 && idx != _cfg.SelectedItem) return;   // 拖的不是当前选中的就只存不刷界面
             _loading = true;
             try
@@ -104,15 +106,21 @@ namespace ScreenCrosshair
 
             bool ok = false;
             Point p = Point.Empty;
-            using (PickerForm f = new PickerForm())
+            try
             {
-                f.ShowDialog();
-                ok = f.Ok;
-                p = f.Picked;
+                using (PickerForm f = new PickerForm())
+                {
+                    f.ShowDialog();
+                    ok = f.Ok;
+                    p = f.Picked;
+                }
             }
-
-            Show();
-            Activate();
+            finally
+            {
+                Show();
+                Activate();
+                ApplyVisibility();
+            }
             if (!ok) { ApplyVisibility(); return; }
 
             Screen sc = Screen.FromPoint(p);

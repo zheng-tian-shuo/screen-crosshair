@@ -101,7 +101,8 @@ namespace ScreenCrosshair
             string v;
             double n;
             if (s.TryGetValue(k, out v) &&
-                double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out n))
+                double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out n) &&
+                !double.IsNaN(n) && !double.IsInfinity(n))
             {
                 if (n < lo) n = lo;
                 if (n > hi) n = hi;

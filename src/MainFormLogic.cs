@@ -44,6 +44,7 @@ namespace ScreenCrosshair
         {
             if (_loading || _cbItem.SelectedIndex < 0) return;
             _cfg.SelectedItem = _cbItem.SelectedIndex;
+            SaveSoon();
             PushToUi();
         }
 
@@ -116,6 +117,7 @@ namespace ScreenCrosshair
             for (int i = 0; i < list.Count; i++)
             {
                 OverlayForm f = new OverlayForm(list[i]);
+                f.SetMoveMode(_dragMode);
                 f.PositionChangedByUser += OverlayMoved;
                 _ovl.Add(f);
             }

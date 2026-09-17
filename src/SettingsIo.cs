@@ -34,8 +34,8 @@ namespace ScreenCrosshair
             it.TickSpacing = IniBag.I(d, pre + "TickSpacing", 26, 4, 200);
             it.TickLength = IniBag.I(d, pre + "TickLength", 11, 4, 120);
             it.ShowLabels = IniBag.B(d, pre + "ShowLabels", true);
-            it.LabelStart = IniBag.I(d, pre + "LabelStart", 50, 0, 9999);
-            it.LabelStep = IniBag.I(d, pre + "LabelStep", 25, 0, 9999);
+            it.LabelStart = IniBag.I(d, pre + "LabelStart", 50, 0, 99999);
+            it.LabelStep = IniBag.I(d, pre + "LabelStep", 25, 0, 99999);
             return it;
         }
 
@@ -96,6 +96,10 @@ namespace ScreenCrosshair
 
         public bool ImportFrom(string file)
         {
+            // Recovery belongs to this machine, never to an imported preset.
+            bool weakActive = WeakActive;
+            string weakPolicy = WeakPolicyName;
+            string weakRecords = WeakMtuRecords;
             try
             {
                 string[] lines = File.ReadAllLines(file, Encoding.UTF8);
@@ -106,6 +110,12 @@ namespace ScreenCrosshair
                 return true;
             }
             catch { return false; }
+            finally
+            {
+                WeakActive = weakActive;
+                WeakPolicyName = weakPolicy;
+                WeakMtuRecords = weakRecords;
+            }
         }
 
         public List<string> BuildLines()
@@ -199,7 +209,7 @@ namespace ScreenCrosshair
             L.Add(pre + "FovReferenceY=" + it.FovReferenceY);
             L.Add(pre + "FovReferenceWidth=" + it.FovReferenceWidth);
             L.Add(pre + "FovReferenceHeight=" + it.FovReferenceHeight);
-            if (it.Shape == CrosshairShape.Mildot)
+            // Keep custom ticks when temporarily using another shape.
             {
                 L.Add(pre + "TickCount=" + it.TickCount);
                 L.Add(pre + "TickSpacing=" + it.TickSpacing);

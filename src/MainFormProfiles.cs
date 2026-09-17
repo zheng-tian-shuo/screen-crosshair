@@ -148,6 +148,11 @@ namespace ScreenCrosshair
             {
                 d.Filter = "配置文件 (*.ini)|*.ini|所有文件 (*.*)|*.*";
                 if (d.ShowDialog(this) != DialogResult.OK) return;
+                if (_weakBusy || HasWeakRecoveryState())
+                {
+                    Toast("请先关闭并还原弱网，再导入配置");
+                    return;
+                }
                 if (!_cfg.ImportFrom(d.FileName)) { Toast("导入失败，文件读不出来"); return; }
                 RebuildOverlays();
                 PushToUi();

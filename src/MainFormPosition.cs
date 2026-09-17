@@ -281,25 +281,29 @@ namespace ScreenCrosshair
             }
 
             Rectangle b = ScreenOf(it).Bounds;
-            // 水平 FOV 下，像素偏移还要随基准屏幕宽度换算；旧配置没有记录
-            // 基准分辨率时退回当前宽度，保持与旧版行为兼容。
-            int refWidth = it.FovReferenceWidth > 0 ? it.FovReferenceWidth : b.Width;
-            double ratio = ((double)b.Width / refWidth) *
-                Math.Tan(it.FovReference * Math.PI / 360.0) /
-                Math.Tan(target * Math.PI / 360.0);
-            int cx = b.Width / 2;
-            int cy = b.Height / 2;
-            int x = ClampPixel((int)Math.Round(cx + (it.FovReferenceX - cx) * ratio));
-            int y = ClampPixel((int)Math.Round(cy + (it.FovReferenceY - cy) * ratio));
-
+            Point targetPoint = ConvertFovCoordinates(it, b.Size, target);
             it.Centered = false;
-            it.X = x;
-            it.Y = y;
+            it.X = targetPoint.X;
+            it.Y = targetPoint.Y;
             AfterEdit();
-            _lblFovResult.Text = "已应用目标点  X " + x + "   Y " + y;
+            _lblFovResult.Text = "已应用目标点  X " + it.X + "   Y " + it.Y;
             _lblFovResult.ForeColor = Theme.Green;
             Toast("FOV " + target.ToString("0.##", CultureInfo.InvariantCulture) +
                 "° 坐标已应用");
+        }
+
+        internal static Point ConvertFovCoordinates(CrosshairItemSettings it, Size size, double target)
+        {
+            // 水平 FOV 下，像素偏移还要随基准屏幕宽度换算；旧配置没有记录
+            // 基准分辨率时退回当前宽度，保持与旧版行为兼容。
+            int refWidth = it.FovReferenceWidth > 0 ? it.FovReferenceWidth : size.Width;
+            int refHeight = it.FovReferenceHeight > 0 ? it.FovReferenceHeight : size.Height;
+            double ratio = ((double)size.Width / refWidth) *
+                Math.Tan(it.FovReference * Math.PI / 360.0) /
+                Math.Tan(target * Math.PI / 360.0);
+            int x = ClampPixel((int)Math.Round(size.Width / 2 + (it.FovReferenceX - refWidth / 2) * ratio));
+            int y = ClampPixel((int)Math.Round(size.Height / 2 + (it.FovReferenceY - refHeight / 2) * ratio));
+            return new Point(x, y);
         }
 
         private void CreateOriginalCrosshair()
@@ -321,8 +325,9 @@ namespace ScreenCrosshair
             CrosshairItemSettings copy = it.Clone();
             copy.Name = it.Name + " · 原本位置";
             copy.Centered = false;
-            copy.X = it.FovReferenceX;
-            copy.Y = it.FovReferenceY;
+            Point original = ConvertFovCoordinates(it, ScreenOf(it).Bounds.Size, it.FovReference);
+            copy.X = original.X;
+            copy.Y = original.Y;
             copy.FovReferenceSet = false;
             copy.FovReference = 90.0;
             copy.FovReferenceX = 0;
