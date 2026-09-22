@@ -6,7 +6,7 @@ namespace ScreenCrosshair
 {
     public partial class MainForm
     {
-        private const int ContentColumnW = 468;
+        private const int ContentColumnW = 500;
         // ---------------- 左侧导航 ----------------
         private void BuildSide()
         {
@@ -25,14 +25,14 @@ namespace ScreenCrosshair
             {
                 SideTab t = new SideTab();
                 t.Text = TabNames[i];
-                t.Bounds = new Rectangle(12, 14 + i * 42, SideW - 26, 38);
+                t.Bounds = new Rectangle(12, 14 + i * 44, SideW - 26, 40);
                 t.Tag = i;
                 t.Click += TabClick;
                 side.Controls.Add(t);
                 _tabs[i] = t;
             }
 
-            int y = 14 + TabNames.Length * 42 + 14;
+            int y = 14 + TabNames.Length * 44 + 16;
             Panel sep2 = new Panel();
             sep2.Bounds = new Rectangle(18, y, SideW - 36, 1);
             sep2.BackColor = Theme.Border;

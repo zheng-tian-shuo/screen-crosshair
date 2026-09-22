@@ -29,10 +29,10 @@ namespace ScreenCrosshair
         private const int PageWeakNetwork = 4;
         private const int PageCount = 5;
 
-        private const int WinW = 688;
-        private const int WinH = 624;
-        private const int BarH = 52;
-        private const int SideW = 156;
+        private const int WinW = 728;
+        private const int WinH = 660;
+        private const int BarH = 56;
+        private const int SideW = 168;
 
         private FlatBtn _pillGlobal;
         private SideTab[] _tabs;
@@ -170,15 +170,15 @@ namespace ScreenCrosshair
             bar.MouseDown += BarDrag;
 
             Panel logo = new Panel();
-            logo.Bounds = new Rectangle(16, 8, 36, 36);
+            logo.Bounds = new Rectangle(18, 9, 38, 38);
             logo.BackColor = Color.Transparent;
             logo.Paint += LogoPaint;
             logo.MouseDown += BarDrag;
             bar.Controls.Add(logo);
 
-            Ui.L(bar, AppInfo.AppName, Theme.Title, Theme.Text, 60, 8, 130, 24).MouseDown += BarDrag;
+            Ui.L(bar, AppInfo.AppName, Theme.Title, Theme.Text, 64, 9, 140, 24).MouseDown += BarDrag;
             Ui.L(bar, "屏幕准星与计时工具", Theme.Sub, Theme.TextFaint,
-                62, 31, 220, 16).MouseDown += BarDrag;
+                66, 33, 230, 16).MouseDown += BarDrag;
 
             _pillGlobal = new FlatBtn();
             _themeDark = new FlatBtn();

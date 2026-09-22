@@ -140,7 +140,7 @@ namespace ScreenCrosshair
             pg.AutoScrollPosition = Point.Empty;
 
             int y = Theme.S(14);
-            int gap = Theme.S(12);
+            int gap = Theme.S(16);
             for (int i = 0; i < _pgCards.Count; i++)
             {
                 Card c = _pgCards[i];

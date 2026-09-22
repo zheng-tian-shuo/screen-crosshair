@@ -9,7 +9,7 @@ namespace ScreenCrosshair
     public class FlatBtn : Control
     {
         public int Kind;
-        public int Radius = 5;
+        public int Radius = 7;
         private bool _hover, _down;
 
         public FlatBtn()
@@ -112,7 +112,7 @@ namespace ScreenCrosshair
             else if (_hover)
             {
                 if (Kind == 3) { bg = Theme.CardAlt; fg = Theme.Text; bd = Theme.Border; }
-                else { bg = Theme.Mix(bg, Color.White, Kind == 1 ? 0.14 : 0.08); bd = Theme.BorderLit; }
+                else { bg = Theme.Mix(bg, Color.White, Kind == 1 ? 0.1 : 0.06); bd = Theme.BorderLit; }
             }
 
             using (GraphicsPath p = Ui.Round(r, Theme.S(Radius)))
@@ -194,15 +194,15 @@ namespace ScreenCrosshair
 
             if (Active)
             {
-                Ui.FillRound(g, r, Theme.S(5), Theme.CardAlt);
+                Ui.FillRound(g, r, Theme.S(8), Theme.CardAlt);
                 using (SolidBrush b = new SolidBrush(Theme.Accent))
                 using (GraphicsPath p = Ui.Round(
-                    new Rectangle(0, Theme.S(9), Theme.S(3), Height - Theme.S(18)), 1))
+                    new Rectangle(0, Theme.S(9), Theme.S(4), Height - Theme.S(18)), 2))
                     g.FillPath(b, p);
             }
             else if (_hover)
             {
-                Ui.FillRound(g, r, Theme.S(5), Theme.Mix(Theme.Window, Theme.IsLight ? Color.Black : Color.White, 0.05));
+                Ui.FillRound(g, r, Theme.S(6), Theme.Mix(Theme.Window, Theme.IsLight ? Color.Black : Color.White, 0.045));
             }
 
             if (Focused && Enabled)

@@ -8,21 +8,21 @@ namespace ScreenCrosshair
     {
         public static bool IsLight { get; private set; }
         public static void SetLight(bool light) { IsLight = light; }
-        public static Color Window { get { return IsLight ? Color.FromArgb(245, 247, 250) : Hud.Window; } }
-        public static Color Card { get { return IsLight ? Color.White : Hud.Card; } }
-        public static Color CardAlt { get { return IsLight ? Color.FromArgb(237, 241, 246) : Hud.CardAlt; } }
-        public static Color Border { get { return IsLight ? Color.FromArgb(211, 219, 230) : Hud.Border; } }
-        public static Color BorderLit { get { return IsLight ? Color.FromArgb(143, 157, 178) : Hud.BorderLit; } }
-        public static Color Text { get { return IsLight ? Color.FromArgb(17, 24, 32) : Hud.Text; } }
-        public static Color TextMuted { get { return IsLight ? Color.FromArgb(43, 53, 66) : Hud.TextMuted; } }
-        public static Color TextFaint { get { return IsLight ? Color.FromArgb(62, 73, 88) : Hud.TextFaint; } }
-        public static Color Accent { get { return IsLight ? Color.FromArgb(150, 99, 14) : Hud.Accent; } }
-        public static Color AccentDim { get { return IsLight ? Color.FromArgb(169, 119, 34) : Hud.AccentDim; } }
-        public static Color AccentDeep { get { return IsLight ? Color.FromArgb(249, 235, 205) : Hud.AccentDeep; } }
-        public static Color Green { get { return IsLight ? Color.FromArgb(29, 122, 66) : Hud.Green; } }
-        public static Color Danger { get { return IsLight ? Color.FromArgb(182, 49, 49) : Hud.Danger; } }
-        public static Color DangerDim { get { return IsLight ? Color.FromArgb(253, 235, 235) : Hud.DangerDim; } }
-        public static Color Warn { get { return IsLight ? Color.FromArgb(171, 77, 16) : Hud.Warn; } }
+        public static Color Window { get { return IsLight ? Color.FromArgb(224, 229, 236) : Hud.Window; } }
+        public static Color Card { get { return IsLight ? Color.FromArgb(240, 244, 248) : Hud.Card; } }
+        public static Color CardAlt { get { return IsLight ? Color.FromArgb(216, 224, 233) : Hud.CardAlt; } }
+        public static Color Border { get { return IsLight ? Color.FromArgb(188, 199, 214) : Hud.Border; } }
+        public static Color BorderLit { get { return IsLight ? Color.FromArgb(118, 137, 163) : Hud.BorderLit; } }
+        public static Color Text { get { return IsLight ? Color.FromArgb(31, 41, 56) : Hud.Text; } }
+        public static Color TextMuted { get { return IsLight ? Color.FromArgb(70, 84, 104) : Hud.TextMuted; } }
+        public static Color TextFaint { get { return IsLight ? Color.FromArgb(97, 114, 138) : Hud.TextFaint; } }
+        public static Color Accent { get { return IsLight ? Color.FromArgb(166, 111, 17) : Hud.Accent; } }
+        public static Color AccentDim { get { return IsLight ? Color.FromArgb(184, 132, 40) : Hud.AccentDim; } }
+        public static Color AccentDeep { get { return IsLight ? Color.FromArgb(247, 229, 188) : Hud.AccentDeep; } }
+        public static Color Green { get { return IsLight ? Color.FromArgb(34, 126, 72) : Hud.Green; } }
+        public static Color Danger { get { return IsLight ? Color.FromArgb(187, 55, 61) : Hud.Danger; } }
+        public static Color DangerDim { get { return IsLight ? Color.FromArgb(253, 237, 237) : Hud.DangerDim; } }
+        public static Color Warn { get { return IsLight ? Color.FromArgb(181, 83, 20) : Hud.Warn; } }
 
         public static Color[] Palette()
         {
@@ -33,22 +33,22 @@ namespace ScreenCrosshair
         // Screen overlays keep their original contrast independently of the settings UI.
         public static class Hud
         {
-            public static readonly Color Window = Color.FromArgb(20, 23, 29);
-            public static readonly Color Card = Color.FromArgb(29, 33, 41);
-            public static readonly Color CardAlt = Color.FromArgb(39, 44, 54);
-            public static readonly Color Border = Color.FromArgb(49, 56, 68);
-            public static readonly Color BorderLit = Color.FromArgb(87, 99, 117);
-            public static readonly Color Text = Color.FromArgb(235, 239, 245);
-            public static readonly Color TextMuted = Color.FromArgb(185, 195, 209);
-            public static readonly Color TextFaint = Color.FromArgb(147, 160, 180);
+            public static readonly Color Window = Color.FromArgb(18, 23, 31);
+            public static readonly Color Card = Color.FromArgb(27, 33, 43);
+            public static readonly Color CardAlt = Color.FromArgb(36, 43, 55);
+            public static readonly Color Border = Color.FromArgb(49, 59, 74);
+            public static readonly Color BorderLit = Color.FromArgb(91, 106, 128);
+            public static readonly Color Text = Color.FromArgb(237, 241, 247);
+            public static readonly Color TextMuted = Color.FromArgb(185, 196, 211);
+            public static readonly Color TextFaint = Color.FromArgb(145, 159, 181);
 
             // 图标上的那点金色，整套界面的强调色都从它来
-            public static readonly Color Accent = Color.FromArgb(232, 187, 94);
-            public static readonly Color AccentDim = Color.FromArgb(176, 131, 28);
-            public static readonly Color AccentDeep = Color.FromArgb(92, 68, 14);
-            public static readonly Color Green = Color.FromArgb(122, 214, 138);
-            public static readonly Color Danger = Color.FromArgb(255, 153, 146);
-            public static readonly Color DangerDim = Color.FromArgb(65, 38, 43);
+            public static readonly Color Accent = Color.FromArgb(229, 180, 86);
+            public static readonly Color AccentDim = Color.FromArgb(174, 127, 33);
+            public static readonly Color AccentDeep = Color.FromArgb(67, 53, 25);
+            public static readonly Color Green = Color.FromArgb(117, 211, 139);
+            public static readonly Color Danger = Color.FromArgb(247, 139, 133);
+            public static readonly Color DangerDim = Color.FromArgb(67, 39, 45);
             // 金色已经占了强调位，警告改用橙红，免得两个黄互相打架
             public static readonly Color Warn = Color.FromArgb(255, 138, 60);
         }
