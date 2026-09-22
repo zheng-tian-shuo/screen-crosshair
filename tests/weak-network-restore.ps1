@@ -58,3 +58,16 @@ foreach ($case in @('success','absent','query-fails','remove-fails','remove-igno
     if ($case -eq 'success' -and ($script:exists -or $script:mtus[7] -ne 1500 -or $script:mtus[8] -ne 1400)) { throw 'Incomplete recovery' }
     Write-Host "PASS $case"
 }
+
+# A newer recovery record includes the MTU applied by the app. If another tool
+# changed it afterwards, recovery must leave that external change untouched.
+$script:mode = 'conflict'
+$script:exists = $true
+$script:removals = 0
+$script:mtus = @{7=1100}
+$code = $builder.Invoke($null, @('ScreenCrosshairWeak_test', '7|1500|576'))
+$output = @(& ([scriptblock]::Create($code)))
+if ($output -contains 'RESTORE|OK') { throw 'External MTU change must not be overwritten' }
+if (-not ($output -like 'MTUSKIP|7|1100|576')) { throw "Missing MTUSKIP diagnostic: $output" }
+if ($script:mtus[7] -ne 1100) { throw 'External MTU value was changed' }
+Write-Host 'PASS mtu-conflict-is-preserved'

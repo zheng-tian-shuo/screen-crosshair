@@ -33,6 +33,7 @@ namespace ScreenCrosshair
             AddMenu(m, "启动自由倒计时", delegate { StartCountdown(2); });
             AddMenu(m, "停止全部倒计时", delegate { StopAllCountdowns(); });
             m.Items.Add(new ToolStripSeparator());
+            AddMenu(m, "仅恢复网络", delegate { StopWeakNetwork(false); });
             AddMenu(m, "开启 / 关闭弱网", delegate { ToggleWeakNetworkFromHotkey(); });
             m.Items.Add(new ToolStripSeparator());
             AddMenu(m, "退出", delegate { ExitApp(); });

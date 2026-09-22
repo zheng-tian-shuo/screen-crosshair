@@ -88,7 +88,9 @@ namespace ScreenCrosshair
                     if (part.Length != 3 || part[0] != "MTU") continue;
                     int index, original;
                     if (int.TryParse(part[1], out index) && int.TryParse(part[2], out original) && index > 0 && original > 0)
-                        records.Add(index + "|" + original);
+                    {
+                        records.Add(index + "|" + original + "|" + profile.Mtu);
+                    }
                 }
                 mtuRecords = string.Join(";", records.ToArray());
                 bool mtuErrors = output.IndexOf("MTUERR|", StringComparison.Ordinal) >= 0;
@@ -99,6 +101,20 @@ namespace ScreenCrosshair
             }
             else lines.Add("未调整 MTU。");
 
+            if (mtuRecords.Length > 0)
+            {
+                List<string> adapterIds = new List<string>();
+                string[] saved = mtuRecords.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 0; i < saved.Length; i++)
+                {
+                    string[] fields = saved[i].Split('|');
+                    if (fields.Length > 0) adapterIds.Add("index " + fields[0]);
+                }
+                lines.Add("本次调整的网卡接口索引：" + string.Join("、", adapterIds.ToArray()) + "。关闭时会检查后恢复。");
+            }
+            if (!qosOk && mtuRecords.Length > 0)
+                lines.Add("部分成功：QoS 限速未启用，但 MTU 已调整；关闭弱网时仍会尝试恢复。");
+
             log = string.Join(Environment.NewLine, lines.ToArray());
             return qosOk || mtuRecords.Length > 0;
         }
@@ -108,8 +124,11 @@ namespace ScreenCrosshair
             string output;
             bool ran = RunPowerShell(BuildRestoreScript(policyName, mtuRecords), out output);
             bool ok = ran && Array.IndexOf(output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), "RESTORE|OK") >= 0;
+            bool conflict = output.IndexOf("MTUSKIP|", StringComparison.Ordinal) >= 0;
             log = ok ? "已确认临时 QoS 策略已清除，记录的网卡 MTU 已还原。"
                 : "网络尚未完全恢复，请再次点击关闭并还原。\n" + Short(output);
+            if (!ok && conflict)
+                log = "检测到网卡 MTU 在弱网期间被外部修改，软件未覆盖这些改动。\n" + Short(output);
             return ok;
         }
 
@@ -131,19 +150,29 @@ namespace ScreenCrosshair
                 for (int i = 0; i < all.Length; i++)
                 {
                     string[] part = all[i].Split('|');
-                    int index, mtu;
-                    if (part.Length != 2 || !int.TryParse(part[0], out index) || !int.TryParse(part[1], out mtu) || index <= 0 || mtu <= 0)
+                    int index, mtu, applied = 0;
+                    bool hasApplied = part.Length >= 3 && int.TryParse(part[2], out applied) && applied > 0;
+                    if ((part.Length != 2 && part.Length < 3) || !int.TryParse(part[0], out index) || !int.TryParse(part[1], out mtu) || index <= 0 || mtu <= 0)
                     {
                         script.Append("$ok=$false; 'MTUERR|Invalid recovery record';");
                         continue;
                     }
-                    script.Append("try { Set-NetIPInterface -InterfaceIndex ").Append(index)
+                    script.Append("try {");
+                    if (hasApplied)
+                    {
+                        script.Append("$i=Get-NetIPInterface -InterfaceIndex ").Append(index)
+                            .Append(" -AddressFamily IPv4 -PolicyStore ActiveStore -ErrorAction Stop;")
+                            .Append("if (!$i) {throw 'Interface not found'};")
+                            .Append("if ($i.NlMtu -ne ").Append(applied).Append(") {$ok=$false; 'MTUSKIP|'+").Append(index).Append("+'|'+$i.NlMtu+'|'+").Append(applied).Append("} else {");
+                    }
+                    script.Append("Set-NetIPInterface -InterfaceIndex ").Append(index)
                         .Append(" -AddressFamily IPv4 -NlMtuBytes ").Append(mtu)
                         .Append(" -PolicyStore ActiveStore -ErrorAction Stop;")
                         .Append("$i=Get-NetIPInterface -InterfaceIndex ").Append(index)
                         .Append(" -AddressFamily IPv4 -PolicyStore ActiveStore -ErrorAction Stop;")
-                        .Append("if (!$i -or $i.NlMtu -ne ").Append(mtu).Append(") {throw 'MTU verification failed'}")
-                        .Append("} catch {$ok=$false; 'MTUERR|'+$_.Exception.Message};");
+                        .Append("if (!$i -or $i.NlMtu -ne ").Append(mtu).Append(") {throw 'MTU verification failed'}");
+                    if (hasApplied) script.Append("}");
+                    script.Append("} catch {$ok=$false; 'MTUERR|'+$_.Exception.Message};");
                 }
             }
             script.Append("if ($ok) {'RESTORE|OK'}");
