@@ -11,6 +11,8 @@ namespace ScreenCrosshair
         private ComboBox _cbWeakLevel;
         private Chk _chkWeakMtu;
         private Chk _chkWeakIndicator;
+        private Slider _sWeakOpacity;
+        private Label _vWeakOpacity;
         private FlatBtn _btnWeakOn, _btnWeakOff, _btnWeakGrab;
         private Label _lblWeakState;
         private bool _weakBusy;
@@ -54,21 +56,23 @@ namespace ScreenCrosshair
             _chkWeakIndicator.CheckedChanged += WeakSettingsChanged;
             c.Controls.Add(_chkWeakIndicator);
 
+            _sWeakOpacity = SliderRow(c, "不透明度", 190, 20, 100, WeakSettingsChanged, out _vWeakOpacity);
+
             _btnWeakOn = new FlatBtn();
             _btnWeakOn.Kind = 1;
             _btnWeakOn.Text = "开启弱网";
-            _btnWeakOn.Bounds = new Rectangle(14, 198, 112, 30);
+            _btnWeakOn.Bounds = new Rectangle(14, 226, 112, 30);
             _btnWeakOn.Click += delegate { StartWeakNetwork(false); };
             c.Controls.Add(_btnWeakOn);
             _btnWeakOff = new FlatBtn();
             _btnWeakOff.Text = "关闭并还原";
-            _btnWeakOff.Bounds = new Rectangle(136, 198, 124, 30);
+            _btnWeakOff.Bounds = new Rectangle(136, 226, 124, 30);
             _btnWeakOff.Click += delegate { StopWeakNetwork(false); };
             c.Controls.Add(_btnWeakOff);
 
-            _lblWeakState = Ui.L(c, "", Theme.Small, Theme.TextMuted, 14, 238, 414, 54);
+            _lblWeakState = Ui.L(c, "", Theme.Small, Theme.TextMuted, 14, 266, 414, 54);
             Ui.L(c, "使用 Windows 临时 QoS 策略限制出站带宽。需要管理员权限；\n程序退出或下次启动会尝试恢复网络。",
-                Theme.Small, Theme.TextFaint, 14, 304, 414, 40);
+                Theme.Small, Theme.TextFaint, 14, 332, 414, 40);
         }
 
         private void PushWeakNetworkToUi()
@@ -78,6 +82,8 @@ namespace ScreenCrosshair
             _cbWeakLevel.SelectedIndex = Math.Max(0, Math.Min(WeakNetworkOps.Profiles.Length - 1, _cfg.WeakLevel));
             _chkWeakMtu.SetSilent(_cfg.WeakUseMtu);
             _chkWeakIndicator.SetSilent(_cfg.WeakShowIndicator);
+            _sWeakOpacity.SetSilent(_cfg.WeakIndicatorOpacity);
+            _vWeakOpacity.Text = _cfg.WeakIndicatorOpacity + "%";
             UpdateWeakControls();
             SyncWeakIndicator();
             UpdateWeakState(HasWeakRecoveryState() ? "弱网已开启或等待恢复。" : "弱网未开启。");
@@ -90,6 +96,8 @@ namespace ScreenCrosshair
             _cfg.WeakLevel = Math.Max(0, _cbWeakLevel.SelectedIndex);
             _cfg.WeakUseMtu = _chkWeakMtu.Checked;
             _cfg.WeakShowIndicator = _chkWeakIndicator.Checked;
+            _cfg.WeakIndicatorOpacity = _sWeakOpacity.Value;
+            _vWeakOpacity.Text = _cfg.WeakIndicatorOpacity + "%";
             SaveSoon();
             SyncWeakIndicator();
         }
@@ -295,6 +303,7 @@ namespace ScreenCrosshair
                 if (_cfg.WeakIndicatorX != -32768 && _cfg.WeakIndicatorY != -32768)
                     _weakIndicator.Location = new Point(_cfg.WeakIndicatorX, _cfg.WeakIndicatorY);
             }
+            _weakIndicator.SetOpacityPercent(_cfg.WeakIndicatorOpacity);
             _weakIndicator.SetState(HasWeakRecoveryState(), _weakBusy);
             _weakIndicator.ShowTopNoActivate();
         }

@@ -8,9 +8,11 @@ namespace ScreenCrosshair
     /// <summary>弱网状态牌。只显示状态，可用鼠标拖动移动。</summary>
     internal sealed class WeakStatusOverlayForm : Form
     {
+        private readonly LayeredSurface _surface = new LayeredSurface();
         private bool _active;
         private bool _busy;
         private bool _dragging;
+        private int _plateOpacity = 100;
         private Point _dragOffset;
 
         public event EventHandler PositionChangedByUser;
@@ -35,16 +37,36 @@ namespace ScreenCrosshair
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= Native.WS_EX_TOOLWINDOW | Native.WS_EX_NOACTIVATE;
+                cp.ExStyle |= Native.WS_EX_TOOLWINDOW | Native.WS_EX_NOACTIVATE | Native.WS_EX_LAYERED;
                 return cp;
             }
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            Redraw();
+        }
+
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            // The complete window is supplied by UpdateLayeredWindow.
         }
 
         public void SetState(bool active, bool busy)
         {
             _active = active;
             _busy = busy;
-            Invalidate();
+            Redraw();
+        }
+
+        public void SetOpacityPercent(int percent)
+        {
+            if (percent < 20) percent = 20;
+            if (percent > 100) percent = 100;
+            if (_plateOpacity == percent) return;
+            _plateOpacity = percent;
+            Redraw();
         }
 
         public void ShowTopNoActivate()
@@ -56,26 +78,50 @@ namespace ScreenCrosshair
                 Native.SWP_NOMOVE | Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
         }
 
-        protected override void OnPaint(PaintEventArgs e)
+        private void Redraw()
         {
-            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            Rectangle r = new Rectangle(0, 0, Width - 1, Height - 1);
-            Color accent = _active ? Theme.Hud.Green : Theme.Hud.TextFaint;
-            using (GraphicsPath p = Ui.Round(r, Theme.S(7)))
-            using (SolidBrush bg = new SolidBrush(Theme.Hud.Card))
-            using (Pen border = new Pen(_active ? Theme.Hud.Green : Theme.Hud.Border, 1f))
-            using (SolidBrush dot = new SolidBrush(accent))
+            if (!IsHandleCreated || IsDisposed) return;
+            Bitmap bmp = _surface.Begin(Width, Height);
+            if (bmp == null) return;
+
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                e.Graphics.FillPath(bg, p);
-                e.Graphics.DrawPath(border, p);
-                e.Graphics.FillEllipse(dot, Theme.S(12), Theme.S(11), Theme.S(12), Theme.S(12));
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.Clear(Color.Transparent);
+
+                Rectangle r = new Rectangle(0, 0, Width - 1, Height - 1);
+                Color accent = _active ? Theme.Hud.Green : Theme.Hud.TextFaint;
+                int alpha = (int)Math.Round(255 * _plateOpacity / 100.0);
+                using (GraphicsPath p = Ui.Round(r, Theme.S(7)))
+                using (SolidBrush bg = new SolidBrush(Color.FromArgb(alpha, Theme.Hud.Card)))
+                using (Pen border = new Pen(Color.FromArgb(alpha, _active ? Theme.Hud.Green : Theme.Hud.Border), 1f))
+                using (SolidBrush dot = new SolidBrush(accent))
+                {
+                    g.FillPath(bg, p);
+                    g.DrawPath(border, p);
+                    g.FillEllipse(dot, Theme.S(12), Theme.S(11), Theme.S(12), Theme.S(12));
+                }
+
+                string state = _busy ? "切换中…" : (_active ? "已开启" : "未开启");
+                string text = "灵魂出窍  " + state;
+                using (Font textFont = new Font(Theme.Small.FontFamily, Theme.S(11),
+                    FontStyle.Bold, GraphicsUnit.Pixel))
+                using (StringFormat sf = new StringFormat())
+                using (GraphicsPath textPath = new GraphicsPath())
+                using (Pen textOutline = new Pen(Color.FromArgb(220, 8, 9, 12), Math.Max(1f, 1.2f * Theme.K)))
+                using (SolidBrush textBrush = new SolidBrush(_active ? Theme.Hud.Text : Theme.Hud.TextMuted))
+                {
+                    sf.Alignment = StringAlignment.Near;
+                    sf.LineAlignment = StringAlignment.Center;
+                    sf.FormatFlags = StringFormatFlags.NoWrap;
+                    textPath.AddString(text, textFont.FontFamily, (int)textFont.Style,
+                        textFont.Size, new RectangleF(Theme.S(32), 0, Width - Theme.S(40), Height), sf);
+                    textOutline.LineJoin = LineJoin.Round;
+                    g.DrawPath(textOutline, textPath);
+                    g.FillPath(textBrush, textPath);
+                }
             }
-            string state = _busy ? "切换中…" : (_active ? "已开启" : "未开启");
-            string text = "灵魂出窍  " + state;
-            TextRenderer.DrawText(e.Graphics, text, Theme.Small,
-                new Rectangle(Theme.S(32), 0, Width - Theme.S(40), Height),
-                _active ? Theme.Hud.Text : Theme.Hud.TextMuted,
-                TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
+            _surface.Push(Handle, Left, Top);
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
@@ -114,6 +160,12 @@ namespace ScreenCrosshair
         {
             using (GraphicsPath p = Ui.Round(new Rectangle(0, 0, Width, Height), Theme.S(7)))
                 Region = new Region(p);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) _surface.Dispose();
+            base.Dispose(disposing);
         }
     }
 }

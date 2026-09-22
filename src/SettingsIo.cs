@@ -169,6 +169,7 @@ namespace ScreenCrosshair
             L.Add("WeakLevel=" + WeakLevel);
             L.Add("WeakUseMtu=" + (WeakUseMtu ? "1" : "0"));
             L.Add("WeakShowIndicator=" + (WeakShowIndicator ? "1" : "0"));
+            L.Add("WeakIndicatorOpacity=" + WeakIndicatorOpacity);
             L.Add("WeakIndicatorX=" + WeakIndicatorX);
             L.Add("WeakIndicatorY=" + WeakIndicatorY);
             L.Add("WeakActive=" + (WeakActive ? "1" : "0"));

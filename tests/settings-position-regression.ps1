@@ -56,10 +56,12 @@ public class SettingsPositionRegression
         cfg.Items[0].TickCount = 17;
         cfg.Items[0].LabelStart = 99999;
         cfg.Items[0].LabelStep = 45678;
+        cfg.WeakIndicatorOpacity = 42;
         AppSettings loaded = new AppSettings();
         Read(loaded, cfg.BuildLines().ToArray());
         Check(loaded.Items[0].TickCount == 17 && loaded.Items[0].LabelStart == 99999 &&
             loaded.Items[0].LabelStep == 45678, "hidden tick settings and five-digit labels survive reload");
+        Check(loaded.WeakIndicatorOpacity == 42, "weak status indicator opacity survives reload");
         foreach (string invalid in new string[] { "NaN", "Infinity", "-Infinity" })
         {
             Read(loaded, new string[] { "[app]", "ProfileCount=1", "[profile0]", "Count=1",

@@ -55,6 +55,7 @@ namespace ScreenCrosshair
         public int WeakLevel;
         public bool WeakUseMtu;
         public bool WeakShowIndicator;
+        public int WeakIndicatorOpacity;
         public int WeakIndicatorX;
         public int WeakIndicatorY;
         public bool WeakActive;
@@ -109,6 +110,7 @@ namespace ScreenCrosshair
             WeakLevel = 3;
             WeakUseMtu = true;
             WeakShowIndicator = false;
+            WeakIndicatorOpacity = 100;
             WeakIndicatorX = -32768;
             WeakIndicatorY = -32768;
             WeakActive = false;
@@ -310,6 +312,7 @@ namespace ScreenCrosshair
             WeakLevel = IniBag.I(app, "WeakLevel", 3, 0, 3);
             WeakUseMtu = IniBag.B(app, "WeakUseMtu", true);
             WeakShowIndicator = IniBag.B(app, "WeakShowIndicator", false);
+            WeakIndicatorOpacity = IniBag.I(app, "WeakIndicatorOpacity", 100, 20, 100);
             WeakIndicatorX = IniBag.I(app, "WeakIndicatorX", -32768, -32768, 32767);
             WeakIndicatorY = IniBag.I(app, "WeakIndicatorY", -32768, -32768, 32767);
             WeakActive = IniBag.B(app, "WeakActive", false);
