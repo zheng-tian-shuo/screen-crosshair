@@ -8,21 +8,21 @@ namespace ScreenCrosshair
     {
         public static bool IsLight { get; private set; }
         public static void SetLight(bool light) { IsLight = light; }
-        public static Color Window { get { return IsLight ? Color.FromArgb(224, 229, 236) : Hud.Window; } }
-        public static Color Card { get { return IsLight ? Color.FromArgb(240, 244, 248) : Hud.Card; } }
-        public static Color CardAlt { get { return IsLight ? Color.FromArgb(216, 224, 233) : Hud.CardAlt; } }
-        public static Color Border { get { return IsLight ? Color.FromArgb(188, 199, 214) : Hud.Border; } }
-        public static Color BorderLit { get { return IsLight ? Color.FromArgb(118, 137, 163) : Hud.BorderLit; } }
-        public static Color Text { get { return IsLight ? Color.FromArgb(31, 41, 56) : Hud.Text; } }
-        public static Color TextMuted { get { return IsLight ? Color.FromArgb(70, 84, 104) : Hud.TextMuted; } }
-        public static Color TextFaint { get { return IsLight ? Color.FromArgb(97, 114, 138) : Hud.TextFaint; } }
-        public static Color Accent { get { return IsLight ? Color.FromArgb(166, 111, 17) : Hud.Accent; } }
-        public static Color AccentDim { get { return IsLight ? Color.FromArgb(184, 132, 40) : Hud.AccentDim; } }
-        public static Color AccentDeep { get { return IsLight ? Color.FromArgb(247, 229, 188) : Hud.AccentDeep; } }
-        public static Color Green { get { return IsLight ? Color.FromArgb(34, 126, 72) : Hud.Green; } }
-        public static Color Danger { get { return IsLight ? Color.FromArgb(187, 55, 61) : Hud.Danger; } }
-        public static Color DangerDim { get { return IsLight ? Color.FromArgb(253, 237, 237) : Hud.DangerDim; } }
-        public static Color Warn { get { return IsLight ? Color.FromArgb(181, 83, 20) : Hud.Warn; } }
+        public static Color Window { get { return IsLight ? Color.FromArgb(243, 245, 249) : Hud.Window; } }
+        public static Color Card { get { return IsLight ? Color.FromArgb(255, 255, 255) : Hud.Card; } }
+        public static Color CardAlt { get { return IsLight ? Color.FromArgb(241, 245, 249) : Hud.CardAlt; } }
+        public static Color Border { get { return IsLight ? Color.FromArgb(226, 232, 240) : Hud.Border; } }
+        public static Color BorderLit { get { return IsLight ? Color.FromArgb(148, 163, 184) : Hud.BorderLit; } }
+        public static Color Text { get { return IsLight ? Color.FromArgb(15, 23, 42) : Hud.Text; } }
+        public static Color TextMuted { get { return IsLight ? Color.FromArgb(71, 85, 105) : Hud.TextMuted; } }
+        public static Color TextFaint { get { return IsLight ? Color.FromArgb(148, 163, 184) : Hud.TextFaint; } }
+        public static Color Accent { get { return IsLight ? Color.FromArgb(217, 119, 6) : Hud.Accent; } }
+        public static Color AccentDim { get { return IsLight ? Color.FromArgb(245, 158, 11) : Hud.AccentDim; } }
+        public static Color AccentDeep { get { return IsLight ? Color.FromArgb(254, 243, 199) : Hud.AccentDeep; } }
+        public static Color Green { get { return IsLight ? Color.FromArgb(22, 163, 74) : Hud.Green; } }
+        public static Color Danger { get { return IsLight ? Color.FromArgb(225, 29, 72) : Hud.Danger; } }
+        public static Color DangerDim { get { return IsLight ? Color.FromArgb(255, 241, 242) : Hud.DangerDim; } }
+        public static Color Warn { get { return IsLight ? Color.FromArgb(234, 88, 12) : Hud.Warn; } }
 
         public static Color[] Palette()
         {
@@ -60,7 +60,7 @@ namespace ScreenCrosshair
         public static readonly Font Body = new Font(Face, 9.5f);
         public static readonly Font BodyBold = new Font(Face, 9.5f, FontStyle.Bold);
         public static readonly Font Small = new Font(Face, 9f);
-        public static readonly Font SectionHead = new Font(Face, 10.5f, FontStyle.Bold);
+        public static readonly Font SectionHead = new Font(Face, 11f, FontStyle.Bold);
         public static readonly Font Mono = new Font("Consolas", 10f);
         public static readonly Font TabFont = new Font(Face, 10f);
         public static readonly Font HelpBody = new Font(Face, 10f);

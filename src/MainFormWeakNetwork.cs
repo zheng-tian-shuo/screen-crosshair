@@ -86,7 +86,7 @@ namespace ScreenCrosshair
             _vWeakOpacity.Text = _cfg.WeakIndicatorOpacity + "%";
             UpdateWeakControls();
             SyncWeakIndicator();
-            UpdateWeakState(HasWeakRecoveryState() ? "弱网已开启或等待恢复。" : "弱网未开启。");
+            UpdateWeakState(HasWeakRecoveryState() ? "● 弱网已开启或等待恢复。" : "○ 弱网未开启。");
         }
 
         private void WeakSettingsChanged(object sender, EventArgs e)
@@ -320,7 +320,7 @@ namespace ScreenCrosshair
         {
             if (_lblWeakState == null) return;
             _lblWeakState.Text = state;
-            _lblWeakState.ForeColor = state.StartsWith("弱网已开启") ? Theme.Green : Theme.TextMuted;
+            _lblWeakState.ForeColor = state.Contains("弱网已开启") ? Theme.Green : Theme.TextMuted;
         }
     }
 }

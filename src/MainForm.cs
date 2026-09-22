@@ -183,30 +183,31 @@ namespace ScreenCrosshair
             _pillGlobal = new FlatBtn();
             _themeDark = new FlatBtn();
             _themeDark.Text = "深色";
-            _themeDark.Bounds = new Rectangle(WinW - 404, 13, 58, 26);
+            _themeDark.Bounds = new Rectangle(WinW - 396, 14, 52, 26);
             _themeDark.Click += delegate { SwitchTheme(false); };
             bar.Controls.Add(_themeDark);
             _themeLight = new FlatBtn();
             _themeLight.Text = "浅色";
-            _themeLight.Bounds = new Rectangle(WinW - 340, 13, 58, 26);
+            _themeLight.Bounds = new Rectangle(WinW - 344, 14, 52, 26);
             _themeLight.Click += delegate { SwitchTheme(true); };
             bar.Controls.Add(_themeLight);
             UpdateThemeButtons();
-            _pillGlobal.Bounds = new Rectangle(WinW - 268, 13, 152, 26);
+            _pillGlobal.Bounds = new Rectangle(WinW - 280, 14, 168, 26);
             _pillGlobal.Click += delegate { ToggleGlobal(); };
             bar.Controls.Add(_pillGlobal);
 
             FlatBtn min = new FlatBtn();
             min.Kind = 3;
             min.Text = "—";
-            min.Bounds = new Rectangle(WinW - 100, 13, 34, 26);
+            min.Bounds = new Rectangle(WinW - 98, 14, 34, 26);
             min.Click += delegate { HideToTray(); };
             bar.Controls.Add(min);
 
             FlatBtn cls = new FlatBtn();
             cls.Kind = 3;
+            cls.IsDangerClose = true;
             cls.Text = "✕";
-            cls.Bounds = new Rectangle(WinW - 58, 13, 34, 26);
+            cls.Bounds = new Rectangle(WinW - 56, 14, 34, 26);
             cls.Click += delegate { HideToTray(); };
             bar.Controls.Add(cls);
 

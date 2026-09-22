@@ -101,10 +101,24 @@ namespace ScreenCrosshair
                 sw.Tag = Presets[i];
                 sw.Paint += delegate(object sender, PaintEventArgs e)
                 {
-                    if (!Theme.IsLight) return;
                     Control chip = (Control)sender;
-                    using (Pen border = new Pen(Theme.BorderLit))
-                        e.Graphics.DrawRectangle(border, 0, 0, chip.Width - 1, chip.Height - 1);
+                    e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    CrosshairItemSettings cur = Cur();
+                    bool selected = (cur != null && chip.Tag is Color && ((Color)chip.Tag).ToArgb() == cur.Color.ToArgb());
+
+                    if (selected)
+                    {
+                        Color contrast = Theme.ContrastOn((Color)chip.Tag);
+                        using (Pen p = new Pen(contrast, 2f))
+                            e.Graphics.DrawRectangle(p, 1, 1, chip.Width - 3, chip.Height - 3);
+                        using (SolidBrush b = new SolidBrush(contrast))
+                            e.Graphics.FillEllipse(b, chip.Width / 2 - 2, chip.Height / 2 - 2, 5, 5);
+                    }
+                    else if (Theme.IsLight)
+                    {
+                        using (Pen border = new Pen(Theme.BorderLit))
+                            e.Graphics.DrawRectangle(border, 0, 0, chip.Width - 1, chip.Height - 1);
+                    }
                 };
                 sw.Click += SwatchClick;
                 c2.Controls.Add(sw);

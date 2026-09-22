@@ -10,6 +10,7 @@ namespace ScreenCrosshair
     {
         public int Kind;
         public int Radius = 7;
+        public bool IsDangerClose;
         private bool _hover, _down;
 
         public FlatBtn()
@@ -93,7 +94,11 @@ namespace ScreenCrosshair
                 case 1:
                     bg = Theme.Accent; fg = Theme.IsLight ? Color.White : Color.FromArgb(20, 22, 26); bd = Theme.Accent; break;
                 case 2:
-                    bg = Theme.DangerDim; fg = Theme.Danger; bd = Color.FromArgb(150, 60, 64); break;
+                    // 危险按钮平时低调，悬停与点击时再亮红底，避免视觉干扰
+                    bg = _hover ? Theme.DangerDim : Theme.CardAlt;
+                    fg = Theme.Danger;
+                    bd = _hover ? Theme.Danger : Theme.Border;
+                    break;
                 case 3:
                     bg = Color.Transparent; fg = Theme.TextMuted; bd = Color.Transparent; break;
                 default:
@@ -106,13 +111,34 @@ namespace ScreenCrosshair
             }
             else if (_down)
             {
-                bg = Theme.Mix(bg.A == 0 ? Theme.CardAlt : bg, Color.Black, 0.2);
-                if (Kind == 3) fg = Theme.Text;
+                if (Kind == 3 && IsDangerClose)
+                {
+                    bg = Color.FromArgb(241, 112, 122); fg = Color.White; bd = bg;
+                }
+                else
+                {
+                    bg = Theme.Mix(bg.A == 0 ? Theme.CardAlt : bg, Color.Black, 0.2);
+                    if (Kind == 3) fg = Theme.Text;
+                }
             }
             else if (_hover)
             {
-                if (Kind == 3) { bg = Theme.CardAlt; fg = Theme.Text; bd = Theme.Border; }
-                else { bg = Theme.Mix(bg, Color.White, Kind == 1 ? 0.1 : 0.06); bd = Theme.BorderLit; }
+                if (Kind == 3 && IsDangerClose)
+                {
+                    bg = Color.FromArgb(232, 17, 35); fg = Color.White; bd = bg;
+                }
+                else if (Kind == 3)
+                {
+                    bg = Theme.CardAlt; fg = Theme.Text; bd = Theme.Border;
+                }
+                else if (Kind == 2)
+                {
+                    bg = Theme.DangerDim; fg = Theme.Danger; bd = Theme.Danger;
+                }
+                else
+                {
+                    bg = Theme.Mix(bg, Color.White, Kind == 1 ? 0.1 : 0.06); bd = Theme.BorderLit;
+                }
             }
 
             using (GraphicsPath p = Ui.Round(r, Theme.S(Radius)))
@@ -194,24 +220,29 @@ namespace ScreenCrosshair
 
             if (Active)
             {
-                Ui.FillRound(g, r, Theme.S(8), Theme.CardAlt);
+                Color bg = Theme.IsLight ? Theme.Card : Theme.CardAlt;
+                Ui.FillRound(g, r, Theme.S(8), bg);
+                if (Theme.IsLight)
+                    Ui.DrawRound(g, r, Theme.S(8), Theme.Border, 1f);
                 using (SolidBrush b = new SolidBrush(Theme.Accent))
                 using (GraphicsPath p = Ui.Round(
-                    new Rectangle(0, Theme.S(9), Theme.S(4), Height - Theme.S(18)), 2))
+                    new Rectangle(0, Theme.S(8), Theme.S(4), Height - Theme.S(16)), 2))
                     g.FillPath(b, p);
             }
             else if (_hover)
             {
-                Ui.FillRound(g, r, Theme.S(6), Theme.Mix(Theme.Window, Theme.IsLight ? Color.Black : Color.White, 0.045));
+                Ui.FillRound(g, r, Theme.S(6), Theme.IsLight
+                    ? Color.FromArgb(235, 239, 245)
+                    : Theme.Mix(Theme.Window, Color.White, 0.045));
             }
 
             if (Focused && Enabled)
                 Ui.DrawRound(g, new Rectangle(2, 2, Math.Max(0, Width - 5), Math.Max(0, Height - 5)),
                     Theme.S(4), Theme.AccentDim, 1f);
 
-            TextRenderer.DrawText(g, Text, Font,
+            TextRenderer.DrawText(g, Text, Active ? Theme.BodyBold : Font,
                 new Rectangle(Theme.S(18), 0, Width - Theme.S(24), Height),
-                Active ? Theme.Text : Theme.TextMuted,
+                Active ? (Theme.IsLight ? Theme.Accent : Theme.Text) : Theme.TextMuted,
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
         }
     }

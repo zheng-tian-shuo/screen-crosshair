@@ -84,9 +84,40 @@ namespace ScreenCrosshair
             Ui.L(display, "HUD 面板会自动按剩余时间变色；拖动定位可直观看到屏幕上的实际效果。",
                 Theme.Small, Theme.TextFaint, 22, 150, 410, 20).TextAlign = ContentAlignment.MiddleCenter;
 
-            BuildClockCard(pg);
             BuildHudStyleCard(pg);
             BuildHudPreviewCard(pg);
+            BuildClockCard(pg);
+        }
+
+        private void BuildHudStyleCard(Panel pg)
+        {
+            Card style = NewCard(pg, "HUD 样式", 404, 146);
+            _sHudOpacity = CenteredSliderRow(style, "底板透明度", 40, 20, 100,
+                CountdownStyleChanged, out _vHudOpacity);
+            _vHudOpacity.Width = 84;
+
+            _chkHudPlate = new Chk();
+            _chkHudPlate.Text = "显示半透明底板";
+            _chkHudPlate.Bounds = new Rectangle(56, 78, 170, 22);
+            _chkHudPlate.CheckedChanged += CountdownStyleChanged;
+            style.Controls.Add(_chkHudPlate);
+
+            _chkHudMarkers = new Chk();
+            _chkHudMarkers.Text = "显示左侧状态条";
+            _chkHudMarkers.Bounds = new Rectangle(246, 78, 170, 22);
+            _chkHudMarkers.CheckedChanged += CountdownStyleChanged;
+            style.Controls.Add(_chkHudMarkers);
+
+            Ui.L(style, "透明度越低越不挡背景；关闭底板后仍保留文字描边，适合极简显示。",
+                Theme.Small, Theme.TextFaint, 14, 114, 426, 20).TextAlign = ContentAlignment.MiddleCenter;
+        }
+
+        private void BuildHudPreviewCard(Panel pg)
+        {
+            Card preview = NewCard(pg, "HUD 效果预览", 564, 244);
+            _hudPreview = new HudPreviewBox();
+            _hudPreview.Bounds = new Rectangle(14, 38, preview.Width - 28, 192);
+            preview.Controls.Add(_hudPreview);
         }
 
         /// <summary>
@@ -95,7 +126,7 @@ namespace ScreenCrosshair
         /// </summary>
         private void BuildClockCard(Panel pg)
         {
-            Card clock = NewCard(pg, "北京时间", 422, 228);
+            Card clock = NewCard(pg, "北京时间", 822, 228);
 
             _chkClock = new Chk();
             _chkClock.Text = "在屏幕上常显北京时间";
@@ -138,37 +169,6 @@ namespace ScreenCrosshair
 
             Ui.L(clock, "时间已独立，可单独拖动；字号只影响时间，不影响倒计时。",
                 Theme.Small, Theme.TextFaint, 14, 202, 426, 20);
-        }
-
-        private void BuildHudStyleCard(Panel pg)
-        {
-            Card style = NewCard(pg, "HUD 样式", 662, 150);
-            _sHudOpacity = CenteredSliderRow(style, "底板透明度", 40, 20, 100,
-                CountdownStyleChanged, out _vHudOpacity);
-            _vHudOpacity.Width = 84;
-
-            _chkHudPlate = new Chk();
-            _chkHudPlate.Text = "显示半透明底板";
-            _chkHudPlate.Bounds = new Rectangle(56, 78, 170, 22);
-            _chkHudPlate.CheckedChanged += CountdownStyleChanged;
-            style.Controls.Add(_chkHudPlate);
-
-            _chkHudMarkers = new Chk();
-            _chkHudMarkers.Text = "显示左侧状态条";
-            _chkHudMarkers.Bounds = new Rectangle(246, 78, 170, 22);
-            _chkHudMarkers.CheckedChanged += CountdownStyleChanged;
-            style.Controls.Add(_chkHudMarkers);
-
-            Ui.L(style, "透明度越低越不挡背景；关闭底板后仍保留文字描边，适合极简显示。",
-                Theme.Small, Theme.TextFaint, 14, 116, 426, 20).TextAlign = ContentAlignment.MiddleCenter;
-        }
-
-        private void BuildHudPreviewCard(Panel pg)
-        {
-            Card preview = NewCard(pg, "HUD 效果预览", 824, 244);
-            _hudPreview = new HudPreviewBox();
-            _hudPreview.Bounds = new Rectangle(14, 38, preview.Width - 28, 192);
-            preview.Controls.Add(_hudPreview);
         }
 
         private Slider CenteredSliderRow(Card c, string caption, int y, int min, int max,

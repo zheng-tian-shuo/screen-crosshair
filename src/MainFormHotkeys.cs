@@ -44,10 +44,15 @@ namespace ScreenCrosshair
             _hkOn = new FlatBtn[n];
             _hkTip = new ToolTip();
 
+            Ui.L(c1, "功能名称", Theme.Small, Theme.TextFaint, groupX + 14, 40, 96, 18);
+            Ui.L(c1, "修饰键", Theme.Small, Theme.TextFaint, groupX + 114, 40, 180, 18);
+            Ui.L(c1, "快捷键", Theme.Small, Theme.TextFaint, groupX + 306, 40, 80, 18);
+            Ui.L(c1, "状态开关", Theme.Small, Theme.TextFaint, groupX + 394, 40, 88, 18);
+
             for (int i = 0; i < n; i++)
             {
                 int slot = i;           // 闭包要抓住当前值，直接用 i 的话所有按钮都指向最后一行
-                int y = 48 + i * 38;
+                int y = 62 + i * 36;
 
                 _hkName[i] = Ui.L(c1, AppSettings.HotNames[i], Theme.Body, Theme.TextMuted,
                     groupX + 14, y + 2, 100, 20);
@@ -71,7 +76,7 @@ namespace ScreenCrosshair
                 _hkOn[i] = on;
             }
 
-            int by = 48 + n * 38 + 8;
+            int by = 62 + n * 36 + 10;
 
             FlatBtn ap = new FlatBtn();
             ap.Kind = 1;
@@ -221,7 +226,7 @@ namespace ScreenCrosshair
         {
             if (_hkOn == null || _hkOn[i] == null) return;
             bool on = _cfg.HotEnabled(i);
-            _hkOn[i].Text = on ? "已启用" : "已停用";
+            _hkOn[i].Text = on ? "● 已启用" : "○ 已停用";
             _hkOn[i].Kind = 0;
             _hkOn[i].ForeColor = on ? Theme.Green : Theme.TextFaint;
             _hkOn[i].Invalidate();

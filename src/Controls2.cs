@@ -188,8 +188,16 @@ namespace ScreenCrosshair
 
             if (!string.IsNullOrEmpty(Caption))
             {
+                int barW = Theme.S(3);
+                int barH = Theme.S(14);
+                int barX = Theme.S(14);
+                int barY = Theme.S(11);
+                using (GraphicsPath bp = Ui.Round(new Rectangle(barX, barY, barW, barH), Theme.S(1)))
+                using (SolidBrush bb = new SolidBrush(Theme.Accent))
+                    g.FillPath(bb, bp);
+
                 TextRenderer.DrawText(g, Caption, Theme.SectionHead,
-                    new Point(Theme.S(14), Theme.S(9)), Theme.Text);
+                    new Point(barX + barW + Theme.S(6), Theme.S(8)), Theme.Text);
                 using (Pen p = new Pen(Theme.Border, 1f))
                     g.DrawLine(p, Theme.S(14), Theme.S(32), Width - Theme.S(15), Theme.S(32));
             }

@@ -121,13 +121,16 @@ namespace ScreenCrosshair
                     finally { _loading = old; }
                 }
             }
+
+            if (_pgCards.Count > 1 && _pgCards[1] != null)
+                _pgCards[1].Invalidate(true);
         }
 
         private void UpdatePill()
         {
             if (_pillGlobal == null) return;
             _pillGlobal.Kind = _cfg.GlobalVisible ? 1 : 0;
-            _pillGlobal.Text = _cfg.GlobalVisible ? "已显示 · 点击隐藏" : "已隐藏 · 点击显示";
+            _pillGlobal.Text = _cfg.GlobalVisible ? "● 已显示 · 点击隐藏" : "○ 已隐藏 · 点击显示";
             _pillGlobal.Invalidate();
         }
 
@@ -135,9 +138,9 @@ namespace ScreenCrosshair
         {
             if (_lblSideHint == null) return;
             _lblSideHint.Text =
-                "当前预设\n" + _cfg.Active.Name + "\n\n" +
-                "显示 / 隐藏\n" + HotHint(AppSettings.HotToggle) + "\n\n" +
-                "切换预设\n" + HotHint(AppSettings.HotSwitch);
+                "当前预设方案\n" + _cfg.Active.Name + "\n\n" +
+                "显示 / 隐藏准星\n" + HotHint(AppSettings.HotToggle) + "\n\n" +
+                "快速轮换预设\n" + HotHint(AppSettings.HotSwitch);
         }
 
         /// <summary>停用的热键在侧栏直接写「已停用」，免得看着有键其实按不动</summary>

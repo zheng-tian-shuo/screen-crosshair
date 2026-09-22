@@ -20,7 +20,7 @@ namespace ScreenCrosshair
         {
             Panel pg = _pages[PageCrosshair];
 
-            Card c1 = NewCard(pg, "位置", 622, 258);
+            Card c1 = NewCard(pg, "位置", 622, 282);
             _pgCards.Add(c1);
 
             _chkCentered = new Chk();
@@ -44,8 +44,6 @@ namespace ScreenCrosshair
             apply.Click += delegate { CommitXy(); };
             c1.Controls.Add(apply);
 
-            // 卡片内容区只有 440 px 宽，这行提示挤在「应用坐标」右边，写长了会被截掉。
-            // 上下范围跟按钮取齐并垂直居中，视觉上才是一行。
             Label xyHint = Ui.L(c1, "相对目标屏幕左上角", Theme.Small, Theme.TextFaint,
                 310, 73, 130, 26);
             xyHint.TextAlign = ContentAlignment.MiddleLeft;
@@ -53,70 +51,70 @@ namespace ScreenCrosshair
             FlatBtn pick = new FlatBtn();
             pick.Kind = 1;
             pick.Text = "屏幕取点";
-            pick.Bounds = new Rectangle(14, 110, 100, 30);
+            pick.Bounds = new Rectangle(14, 108, 96, 28);
             pick.Click += delegate { PickOnScreen(); };
             c1.Controls.Add(pick);
 
             _btnDrag = new FlatBtn();
             _btnDrag.Text = "拖动定位";
-            _btnDrag.Bounds = new Rectangle(122, 110, 100, 30);
+            _btnDrag.Bounds = new Rectangle(118, 108, 96, 28);
             _btnDrag.Click += delegate { ToggleDrag(); };
             c1.Controls.Add(_btnDrag);
 
             FlatBtn center = new FlatBtn();
             center.Text = "回到中心";
-            center.Bounds = new Rectangle(230, 110, 100, 30);
+            center.Bounds = new Rectangle(222, 108, 96, 28);
             center.Click += delegate { BackToCenter(); };
             c1.Controls.Add(center);
 
-            Ui.L(c1, "1 像素微调", Theme.Body, Theme.TextMuted, 14, 156, 74, 20);
-            string[] arrows = { "←", "→", "↑", "↓" };
-            int[] dx = { -1, 1, 0, 0 };
-            int[] dy = { 0, 0, -1, 1 };
-            for (int i = 0; i < 4; i++)
-            {
-                FlatBtn b = new FlatBtn();
-                b.Text = arrows[i];
-                b.Bounds = new Rectangle(92 + i * 38, 152, 34, 28);
-                b.Tag = new Point(dx[i], dy[i]);
-                b.Click += NudgeClick;
-                c1.Controls.Add(b);
-            }
-            // 原来这里写的是「滚轮也能拖准星」，其实覆盖层只接了拖拽（WM_NCHITTEST 返回
-            // HTCAPTION），滚轮没有任何处理，说法不对，换成按一下动一像素这句实话
-            Label nudgeHint = Ui.L(c1, "按一下动 1 像素，立刻生效", Theme.Small,
-                Theme.TextFaint, 250, 152, 190, 28);
+            Ui.L(c1, "1 像素微调", Theme.Body, Theme.TextMuted, 14, 154, 76, 20);
+            FlatBtn btnUp = new FlatBtn();
+            btnUp.Text = "↑";
+            btnUp.Bounds = new Rectangle(136, 146, 32, 26);
+            btnUp.Tag = new Point(0, -1);
+            btnUp.Click += NudgeClick;
+            c1.Controls.Add(btnUp);
+
+            FlatBtn btnLeft = new FlatBtn();
+            btnLeft.Text = "←";
+            btnLeft.Bounds = new Rectangle(100, 176, 32, 26);
+            btnLeft.Tag = new Point(-1, 0);
+            btnLeft.Click += NudgeClick;
+            c1.Controls.Add(btnLeft);
+
+            FlatBtn btnDown = new FlatBtn();
+            btnDown.Text = "↓";
+            btnDown.Bounds = new Rectangle(136, 176, 32, 26);
+            btnDown.Tag = new Point(0, 1);
+            btnDown.Click += NudgeClick;
+            c1.Controls.Add(btnDown);
+
+            FlatBtn btnRight = new FlatBtn();
+            btnRight.Text = "→";
+            btnRight.Bounds = new Rectangle(172, 176, 32, 26);
+            btnRight.Tag = new Point(1, 0);
+            btnRight.Click += NudgeClick;
+            c1.Controls.Add(btnRight);
+
+            Label nudgeHint = Ui.L(c1, "点击方向键单像素微调落点\n按一下动 1 像素，立刻生效", Theme.Small,
+                Theme.TextFaint, 218, 154, 216, 44);
             nudgeHint.TextAlign = ContentAlignment.MiddleLeft;
 
             // ---- 目标屏幕 ----
-            // 原来这是单独一张卡片，就为了一个下拉框；并页之后页面已经够长了，
-            // 而「在哪块屏」本来就属于位置，直接接在微调下面，中间拉一道分隔线
             Panel sep = new Panel();
-            sep.Bounds = new Rectangle(14, 192, 426, 1);
+            sep.Bounds = new Rectangle(14, 212, 426, 1);
             sep.BackColor = Theme.Border;
             c1.Controls.Add(sep);
 
-            Ui.L(c1, "目标屏幕", Theme.Body, Theme.TextMuted, 14, 206, 60, 20);
-            _cbScreen = Ui.Combo(c1, 78, 203, 260);
+            Ui.L(c1, "目标屏幕", Theme.Body, Theme.TextMuted, 14, 224, 60, 20);
+            _cbScreen = Ui.Combo(c1, 78, 221, 260);
             _cbScreen.SelectedIndexChanged += UiChanged;
             FillScreens();
             Ui.L(c1, "选「跟随鼠标所在屏」时，准星会跟着你正在用的那块屏走",
-                Theme.Small, Theme.TextFaint, 14, 232, 426, 20);
-
-            // ---- 炸点标定流程 ----
-            Card c3 = NewCard(pg, "炸点标定流程", 892, 148);
-            _pgCards.Add(c3);
-            Ui.L(c3, "1. 固定站位，用要标的武器打一发，记住爆点在屏幕上的位置。",
-                Theme.Body, Theme.TextMuted, 14, 42, 424, 20);
-            Ui.L(c3, "2. 回到这里点「屏幕取点」，画面会冻结成截图，在爆点上左键点一下。",
-                Theme.Body, Theme.TextMuted, 14, 66, 424, 20);
-            Ui.L(c3, "3. 用上面的 1 像素微调对齐，然后去「预设」页存成这张图的方案。",
-                Theme.Body, Theme.TextMuted, 14, 90, 424, 20);
-            Ui.L(c3, "4. 要标一串距离就把形状换成「分划板」，量出每格多少米后填进去。",
-                Theme.Body, Theme.TextMuted, 14, 114, 424, 20);
+                Theme.Small, Theme.TextFaint, 14, 252, 426, 20);
 
             // ---- FOV 坐标换算 ----
-            Card c4 = NewCard(pg, "FOV 坐标换算（水平 FOV）", 1052, 230);
+            Card c4 = NewCard(pg, "FOV 坐标换算（水平 FOV）", 920, 230);
             _pgCards.Add(c4);
             Ui.L(c4, "基准 FOV", Theme.Body, Theme.TextMuted, 14, 42, 62, 20);
             _tbFovBase = Ui.NumBox(c4, 78, 39, 64);
@@ -158,10 +156,6 @@ namespace ScreenCrosshair
 
             Ui.L(c4, "同宽高比有效，分辨率会按基准记录自动换算；开镜倍率需另设基准。",
                 Theme.Small, Theme.TextFaint, 14, 202, 426, 20);
-
-            // FOV 换算是标定流程的前置步骤，放在流程卡片上方更符合使用顺序。
-            _pgCards.Remove(c4);
-            _pgCards.Insert(_pgCards.IndexOf(c3), c4);
         }
 
         private void FillScreens()
