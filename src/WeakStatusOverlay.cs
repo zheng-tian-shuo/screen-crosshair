@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.Windows.Forms;
 
 namespace ScreenCrosshair
@@ -24,7 +25,7 @@ namespace ScreenCrosshair
             StartPosition = FormStartPosition.Manual;
             TopMost = true;
             Cursor = Cursors.SizeAll;
-            ClientSize = new Size(Theme.S(186), Theme.S(34));
+            ClientSize = new Size(Theme.S(210), Theme.S(38));
             Rectangle b = Screen.PrimaryScreen.WorkingArea;
             Location = new Point(b.Right - Width - Theme.S(18), b.Top + Theme.S(92));
             ApplyRegion();
@@ -90,35 +91,59 @@ namespace ScreenCrosshair
                 g.Clear(Color.Transparent);
 
                 Rectangle r = new Rectangle(0, 0, Width - 1, Height - 1);
-                Color accent = _active ? Theme.Hud.Green : Theme.Hud.TextFaint;
-                int alpha = (int)Math.Round(255 * _plateOpacity / 100.0);
+                Color accent = _active ? Theme.Hud.Green : (_busy ? Theme.Hud.Warn : Theme.Hud.TextFaint);
+                // Keep a readable plate even at the lowest user-selected opacity.
+                int alpha = 150 + (int)Math.Round(105 * _plateOpacity / 100.0);
                 using (GraphicsPath p = Ui.Round(r, Theme.S(7)))
                 using (SolidBrush bg = new SolidBrush(Color.FromArgb(alpha, Theme.Hud.Card)))
-                using (Pen border = new Pen(Color.FromArgb(alpha, _active ? Theme.Hud.Green : Theme.Hud.Border), 1f))
-                using (SolidBrush dot = new SolidBrush(accent))
+                using (Pen border = new Pen(Color.FromArgb(Math.Min(255, alpha + 20), accent), 1f))
                 {
                     g.FillPath(bg, p);
                     g.DrawPath(border, p);
-                    g.FillEllipse(dot, Theme.S(12), Theme.S(11), Theme.S(12), Theme.S(12));
                 }
 
                 string state = _busy ? "切换中…" : (_active ? "已开启" : "未开启");
-                string text = "灵魂出窍  " + state;
-                using (Font textFont = new Font(Theme.Small.FontFamily, Theme.S(11),
+                string title = "灵魂出窍";
+                using (Font titleFont = new Font(Theme.Small.FontFamily, Theme.S(12),
                     FontStyle.Bold, GraphicsUnit.Pixel))
-                using (StringFormat sf = new StringFormat())
-                using (GraphicsPath textPath = new GraphicsPath())
-                using (Pen textOutline = new Pen(Color.FromArgb(220, 8, 9, 12), Math.Max(1f, 1.2f * Theme.K)))
-                using (SolidBrush textBrush = new SolidBrush(_active ? Theme.Hud.Text : Theme.Hud.TextMuted))
+                using (Font stateFont = new Font(Theme.Small.FontFamily, Theme.S(11),
+                    FontStyle.Bold, GraphicsUnit.Pixel))
                 {
-                    sf.Alignment = StringAlignment.Near;
-                    sf.LineAlignment = StringAlignment.Center;
-                    sf.FormatFlags = StringFormatFlags.NoWrap;
-                    textPath.AddString(text, textFont.FontFamily, (int)textFont.Style,
-                        textFont.Size, new RectangleF(Theme.S(32), 0, Width - Theme.S(40), Height), sf);
-                    textOutline.LineJoin = LineJoin.Round;
-                    g.DrawPath(textOutline, textPath);
-                    g.FillPath(textBrush, textPath);
+                    TextRenderingHint oldHint = g.TextRenderingHint;
+                    g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+                    TextFormatFlags textFlags = TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix |
+                        TextFormatFlags.VerticalCenter;
+                    Size titleSize = TextRenderer.MeasureText(g, title, titleFont,
+                        new Size(Width, Height), TextFormatFlags.NoPadding);
+                    Size stateSize = TextRenderer.MeasureText(g, state, stateFont,
+                        new Size(Width, Height), TextFormatFlags.NoPadding);
+                    int stateWidth = stateSize.Width + Theme.S(14);
+                    int dotSize = Theme.S(12);
+                    int gap = Theme.S(10);
+                    int contentWidth = dotSize + gap + titleSize.Width + gap + stateWidth;
+                    int contentX = Math.Max(Theme.S(8), (Width - contentWidth) / 2);
+                    int dotY = (Height - dotSize) / 2;
+                    int textX = contentX + dotSize + gap;
+                    int stateX = textX + titleSize.Width + gap;
+                    int stateHeight = Theme.S(24);
+                    int stateY = (Height - stateHeight) / 2;
+                    Rectangle stateRect = new Rectangle(stateX, stateY, stateWidth, stateHeight);
+                    Color stateBg = _active ? Color.FromArgb(55, Theme.Hud.Green)
+                        : (_busy ? Color.FromArgb(60, Theme.Hud.Warn) : Color.FromArgb(55, Theme.Hud.TextFaint));
+                    Color stateFg = _active ? Theme.Hud.Green
+                        : (_busy ? Theme.Hud.Warn : Theme.Hud.Text);
+                    using (SolidBrush dot = new SolidBrush(accent))
+                        g.FillEllipse(dot, contentX, dotY, dotSize, dotSize);
+                    using (GraphicsPath statePath = Ui.Round(stateRect, Theme.S(5)))
+                    using (SolidBrush stateBrush = new SolidBrush(stateBg))
+                    {
+                        g.FillPath(stateBrush, statePath);
+                    }
+                    TextRenderer.DrawText(g, title, titleFont,
+                        new Rectangle(textX, stateY, titleSize.Width, stateHeight), Theme.Hud.Text, textFlags);
+                    TextRenderer.DrawText(g, state, stateFont, stateRect, stateFg,
+                        textFlags | TextFormatFlags.HorizontalCenter);
+                    g.TextRenderingHint = oldHint;
                 }
             }
             _surface.Push(Handle, Left, Top);
