@@ -91,7 +91,7 @@ namespace ScreenCrosshair
                 g.Clear(Color.Transparent);
 
                 Rectangle r = new Rectangle(0, 0, Width - 1, Height - 1);
-                Color accent = _active ? Theme.Hud.Green : (_busy ? Theme.Hud.Warn : Theme.Hud.TextFaint);
+                Color accent = _busy ? Theme.Hud.Warn : (_active ? Theme.Hud.Green : Theme.Hud.TextFaint);
                 // Keep a readable plate even at the lowest user-selected opacity.
                 int alpha = 150 + (int)Math.Round(105 * _plateOpacity / 100.0);
                 using (GraphicsPath p = Ui.Round(r, Theme.S(7)))
@@ -117,23 +117,28 @@ namespace ScreenCrosshair
                         new Size(Width, Height), TextFormatFlags.NoPadding);
                     Size stateSize = TextRenderer.MeasureText(g, state, stateFont,
                         new Size(Width, Height), TextFormatFlags.NoPadding);
-                    int stateWidth = stateSize.Width + Theme.S(14);
-                    int dotSize = Theme.S(12);
-                    int gap = Theme.S(10);
-                    int contentWidth = dotSize + gap + titleSize.Width + gap + stateWidth;
-                    int contentX = Math.Max(Theme.S(8), (Width - contentWidth) / 2);
+                    int padLeft = Theme.S(16);
+                    int padRight = Theme.S(14);
+                    int dotSize = Theme.S(10);
                     int dotY = (Height - dotSize) / 2;
-                    int textX = contentX + dotSize + gap;
-                    int stateX = textX + titleSize.Width + gap;
+                    int dotX = padLeft;
+
                     int stateHeight = Theme.S(24);
                     int stateY = (Height - stateHeight) / 2;
+                    int stateWidth = stateSize.Width + Theme.S(14);
+                    int stateX = Width - padRight - stateWidth;
+
+                    int avail = stateX - (dotX + dotSize) - titleSize.Width;
+                    int gap = Math.Max(Theme.S(8), avail / 2);
+                    int textX = dotX + dotSize + gap;
+
                     Rectangle stateRect = new Rectangle(stateX, stateY, stateWidth, stateHeight);
-                    Color stateBg = _active ? Color.FromArgb(55, Theme.Hud.Green)
-                        : (_busy ? Color.FromArgb(60, Theme.Hud.Warn) : Color.FromArgb(55, Theme.Hud.TextFaint));
-                    Color stateFg = _active ? Theme.Hud.Green
-                        : (_busy ? Theme.Hud.Warn : Theme.Hud.Text);
+                    Color stateBg = _busy ? Color.FromArgb(60, Theme.Hud.Warn)
+                        : (_active ? Color.FromArgb(55, Theme.Hud.Green) : Color.FromArgb(55, Theme.Hud.TextFaint));
+                    Color stateFg = _busy ? Theme.Hud.Warn
+                        : (_active ? Theme.Hud.Green : Theme.Hud.Text);
                     using (SolidBrush dot = new SolidBrush(accent))
-                        g.FillEllipse(dot, contentX, dotY, dotSize, dotSize);
+                        g.FillEllipse(dot, dotX, dotY, dotSize, dotSize);
                     using (GraphicsPath statePath = Ui.Round(stateRect, Theme.S(5)))
                     using (SolidBrush stateBrush = new SolidBrush(stateBg))
                     {
