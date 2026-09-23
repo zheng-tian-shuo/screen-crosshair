@@ -116,7 +116,7 @@ namespace ScreenCrosshair
                 Theme.Small, Theme.TextFaint, 14, 252, 426, 20);
 
             // ---- FOV 坐标换算 ----
-            Card c4 = NewCard(pg, "FOV / 分辨率坐标换算", 920, 270);
+            Card c4 = NewCard(pg, "FOV / 分辨率坐标换算", 920, 220);
             _pgCards.Add(c4);
             Ui.L(c4, "目标 FOV", Theme.Body, Theme.TextMuted, 14, 42, 72, 20);
             _tbFovTarget = Ui.NumBox(c4, 96, 39, 64);
