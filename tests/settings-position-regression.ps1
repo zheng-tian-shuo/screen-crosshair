@@ -43,6 +43,10 @@ public class SettingsPositionRegression
             "same FOV preserves the original point");
         Check(Convert(item, new Size(1920, 1080), 120) == new Point(1099, 575),
             "wider FOV moves the point toward center");
+        Check(Convert(item, new Size(1920, 1200), 90) == new Point(1200, 660),
+            "different aspect ratio converts vertical offset independently");
+        Check(Convert(item, new Size(2560, 1080), 90) == new Point(1600, 620),
+            "ultrawide aspect ratio preserves horizontal FOV projection");
         item.FovReferenceX = 960;
         item.FovReferenceY = 540;
         Check(Convert(item, new Size(2560, 1440), 120) == new Point(1280, 720),
