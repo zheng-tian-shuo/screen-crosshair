@@ -21,40 +21,12 @@ public class SettingsPositionRegression
         if (!ok) throw new Exception(message);
         Console.WriteLine("PASS " + message);
     }
-    static Point Convert(CrosshairItemSettings item, Size size, double fov)
-    {
-        return (Point)typeof(MainForm).GetMethod("ConvertFovCoordinates",
-            BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { item, size, fov });
-    }
     static void Read(AppSettings cfg, string[] lines)
     {
         typeof(AppSettings).GetMethod("ReadFrom", Instance).Invoke(cfg, new object[] { lines });
     }
     public static void Run()
     {
-        CrosshairItemSettings item = new CrosshairItemSettings();
-        item.FovReferenceWidth = 1920;
-        item.FovReferenceHeight = 1080;
-        item.FovReferenceX = 1200;
-        item.FovReferenceY = 600;
-        Check(Convert(item, new Size(2560, 1440), 90) == new Point(1600, 800),
-            "resolution change scales around the recorded center");
-        Check(Convert(item, new Size(1920, 1080), 90) == new Point(1200, 600),
-            "same FOV preserves the original point");
-        Check(Convert(item, new Size(1920, 1080), 120) == new Point(1099, 575),
-            "wider FOV moves the point toward center");
-        Check(Convert(item, new Size(1920, 1200), 90) == new Point(1200, 660),
-            "different aspect ratio converts vertical offset independently");
-        Check(Convert(item, new Size(2560, 1080), 90) == new Point(1600, 620),
-            "ultrawide aspect ratio preserves horizontal FOV projection");
-        item.FovReferenceX = 960;
-        item.FovReferenceY = 540;
-        Check(Convert(item, new Size(2560, 1440), 120) == new Point(1280, 720),
-            "center stays centered after resolution and FOV changes");
-        item.FovReferenceWidth = item.FovReferenceHeight = 0;
-        Check(Convert(item, new Size(1920, 1080), 90) == new Point(960, 540),
-            "legacy reference without resolution remains compatible");
-
         AppSettings cfg = new AppSettings();
         cfg.Items[0].Shape = CrosshairShape.Dot;
         cfg.Items[0].TickCount = 17;

@@ -152,16 +152,6 @@ namespace ScreenCrosshair
             Ui.L(c4, "模板基准：FOV 90 · 1920×1080 · X953 Y975",
                 Theme.Small, Theme.TextFaint, 14, 182, 426, 20);
 
-            FlatBtn keep = new FlatBtn();
-            keep.Text = "新建原本准星";
-            keep.Bounds = new Rectangle(14, 216, 136, 28);
-            keep.Click += delegate { CreateOriginalCrosshair(); };
-            c4.Controls.Add(keep);
-
-            Label keepHint = Ui.L(c4, "校准后新建一个准星，位置为原本准星",
-                Theme.Small, Theme.TextFaint, 170, 216, 270, 28);
-            keepHint.TextAlign = ContentAlignment.MiddleLeft;
-
             Ui.L(c4, "结果会映射到当前全屏。",
                 Theme.Small, Theme.TextFaint, 14, 248, 426, 20);
         }
@@ -314,53 +304,6 @@ namespace ScreenCrosshair
             if (t == null || !double.TryParse(t.Text.Trim(), NumberStyles.Float,
                 CultureInfo.InvariantCulture, out fov)) return false;
             return fov > 1.0 && fov < 179.0;
-        }
-
-        internal static Point ConvertFovCoordinates(CrosshairItemSettings it, Size size, double target)
-        {
-            int refWidth = it.FovReferenceWidth > 0 ? it.FovReferenceWidth : size.Width;
-            int refHeight = it.FovReferenceHeight > 0 ? it.FovReferenceHeight : size.Height;
-            return ProjectionMath.ConvertHorizontalFov(
-                new Point(it.FovReferenceX, it.FovReferenceY),
-                new Size(refWidth, refHeight), it.FovReference, size, target);
-        }
-
-        private void CreateOriginalCrosshair()
-        {
-            CrosshairItemSettings it = Cur();
-            if (it == null) return;
-            if (!it.FovReferenceSet)
-            {
-                Toast("请先记录基准点并完成 FOV 校准");
-                return;
-            }
-            if (_cfg.Items.Count >= 16)
-            {
-                Toast("一套预设最多 16 个准星");
-                return;
-            }
-
-            int index = _cfg.SelectedItem;
-            CrosshairItemSettings copy = it.Clone();
-            copy.Name = it.Name + " · 原本位置";
-            copy.Centered = false;
-            Point original = ConvertFovCoordinates(it, ScreenOf(it).Bounds.Size, it.FovReference);
-            copy.X = original.X;
-            copy.Y = original.Y;
-            copy.FovReferenceSet = false;
-            copy.FovReference = 90.0;
-            copy.FovReferenceX = 0;
-            copy.FovReferenceY = 0;
-            copy.FovReferenceWidth = 0;
-            copy.FovReferenceHeight = 0;
-            _cfg.Items.Insert(index + 1, copy);
-            _cfg.SelectedItem = index;
-            RebuildOverlays();
-            PushToUi();
-            _cfg.Save();
-            _lblFovResult.Text = "已新建原本位置准星";
-            _lblFovResult.ForeColor = Theme.Green;
-            Toast("已新建原本位置准星");
         }
 
         private static int ClampPixel(int n)
