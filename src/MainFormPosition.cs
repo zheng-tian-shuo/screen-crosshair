@@ -13,10 +13,10 @@ namespace ScreenCrosshair
         private FlatBtn _btnDrag;
         private ComboBox _cbScreen;
         private List<string> _screenNames = new List<string>();
-        private TextBox _tbFovBase, _tbFovTarget;
+        private TextBox _tbFovTarget;
         private TextBox _tbTargetWidth, _tbTargetHeight;
         private TextBox _tbTargetAspect;
-        private Label _lblFovBasePoint, _lblFovResult;
+        private Label _lblFovResult;
 
         private void BuildPositionCards()
         {
@@ -118,12 +118,9 @@ namespace ScreenCrosshair
             // ---- FOV 坐标换算 ----
             Card c4 = NewCard(pg, "FOV / 分辨率坐标换算", 920, 270);
             _pgCards.Add(c4);
-            Ui.L(c4, "基准 FOV", Theme.Body, Theme.TextMuted, 14, 42, 62, 20);
-            _tbFovBase = Ui.NumBox(c4, 78, 39, 64);
-            Ui.L(c4, "°", Theme.Body, Theme.TextFaint, 146, 42, 18, 20);
-            Ui.L(c4, "目标 FOV", Theme.Body, Theme.TextMuted, 178, 42, 62, 20);
-            _tbFovTarget = Ui.NumBox(c4, 242, 39, 64);
-            Ui.L(c4, "°", Theme.Body, Theme.TextFaint, 310, 42, 18, 20);
+            Ui.L(c4, "目标 FOV", Theme.Body, Theme.TextMuted, 14, 42, 72, 20);
+            _tbFovTarget = Ui.NumBox(c4, 96, 39, 64);
+            Ui.L(c4, "°", Theme.Body, Theme.TextFaint, 164, 42, 18, 20);
 
             Ui.L(c4, "目标分辨率", Theme.Body, Theme.TextMuted, 14, 76, 68, 20);
             _tbTargetWidth = Ui.NumBox(c4, 96, 73, 64);
@@ -141,26 +138,19 @@ namespace ScreenCrosshair
             currentSize.Click += delegate { SetTargetResolutionFromScreen(); };
             c4.Controls.Add(currentSize);
 
-            FlatBtn record = new FlatBtn();
-            record.Text = "记录当前点为基准";
-            record.Bounds = new Rectangle(14, 140, 136, 28);
-            record.Click += delegate { RecordFovReference(); };
-            c4.Controls.Add(record);
-
-            _lblFovBasePoint = Ui.L(c4, "未记录基准点", Theme.Small, Theme.TextFaint,
-                170, 140, 270, 28);
-            _lblFovBasePoint.TextAlign = ContentAlignment.MiddleLeft;
-
             FlatBtn convert = new FlatBtn();
             convert.Kind = 1;
             convert.Text = "自动生成准星位置";
-            convert.Bounds = new Rectangle(14, 178, 136, 30);
+            convert.Bounds = new Rectangle(14, 144, 136, 30);
             convert.Click += delegate { GenerateTemplatePoint(); };
             c4.Controls.Add(convert);
 
             _lblFovResult = Ui.L(c4, "输入目标 FOV 和宽高比后生成",
-                Theme.Small, Theme.TextMuted, 170, 178, 270, 32);
+                Theme.Small, Theme.TextMuted, 170, 144, 270, 32);
             _lblFovResult.TextAlign = ContentAlignment.MiddleLeft;
+
+            Ui.L(c4, "模板基准：FOV 90 · 1920×1080 · X953 Y982",
+                Theme.Small, Theme.TextFaint, 14, 182, 426, 20);
 
             FlatBtn keep = new FlatBtn();
             keep.Text = "新建原本准星";
@@ -172,7 +162,7 @@ namespace ScreenCrosshair
                 Theme.Small, Theme.TextFaint, 170, 216, 270, 28);
             keepHint.TextAlign = ContentAlignment.MiddleLeft;
 
-            Ui.L(c4, "基准模板：1920×1080 / FOV 90 / X953 Y982；结果会映射到当前全屏。",
+            Ui.L(c4, "结果会映射到当前全屏。",
                 Theme.Small, Theme.TextFaint, 14, 248, 426, 20);
         }
 
@@ -272,8 +262,6 @@ namespace ScreenCrosshair
             it.X = generated.X;
             it.Y = generated.Y;
             AfterEdit();
-            _lblFovBasePoint.Text = "\u6a21\u677f\u57fa\u51c6 X953 Y982 \u00b7 1920\u00d71080";
-            _lblFovBasePoint.ForeColor = Theme.TextMuted;
             _lblFovResult.Text = "\u5df2\u751f\u6210 X " + generated.X + "\uff0cY " + generated.Y;
             _lblFovResult.ForeColor = Theme.Green;
             Toast("\u5df2\u751f\u6210\u51c6\u661f\u4f4d\u7f6e X " + generated.X + " Y " + generated.Y);
@@ -326,84 +314,6 @@ namespace ScreenCrosshair
             if (t == null || !double.TryParse(t.Text.Trim(), NumberStyles.Float,
                 CultureInfo.InvariantCulture, out fov)) return false;
             return fov > 1.0 && fov < 179.0;
-        }
-
-        private Point CurrentPoint(CrosshairItemSettings it)
-        {
-            Rectangle b = ScreenOf(it).Bounds;
-            if (it.Centered) return new Point(b.Width / 2, b.Height / 2);
-            return new Point(it.X, it.Y);
-        }
-
-        private void RecordFovReference()
-        {
-            CrosshairItemSettings it = Cur();
-            if (it == null) return;
-
-            double fov;
-            if (!TryFov(_tbFovBase, out fov))
-            {
-                Toast("基准 FOV 要填 1 到 179 之间的数字");
-                return;
-            }
-
-            Screen screen = ScreenOf(it);
-            if (screen == null) screen = Screen.PrimaryScreen;
-            if (screen == null) { Toast("无法识别当前屏幕"); return; }
-            Point p = CurrentPoint(it);
-            it.FovReferenceSet = true;
-            it.FovReference = fov;
-            it.FovReferenceX = p.X;
-            it.FovReferenceY = p.Y;
-            it.FovReferenceWidth = screen.Bounds.Width;
-            it.FovReferenceHeight = screen.Bounds.Height;
-            SyncFovUi(it);
-            _lblFovResult.Text = "已记录基准；目标尺寸和 FOV 可单独换算";
-            _lblFovResult.ForeColor = Theme.Green;
-            _cfg.Save();
-            Toast("已记录基准点 X " + p.X + "   Y " + p.Y);
-        }
-
-        private void ConvertFovPoint()
-        {
-            CrosshairItemSettings it = Cur();
-            if (it == null) return;
-
-            double target;
-            if (!TryFov(_tbFovTarget, out target))
-            {
-                Toast("目标 FOV 要填 1 到 179 之间的数字");
-                return;
-            }
-            if (!it.FovReferenceSet)
-            {
-                Toast("请先记录基准点");
-                return;
-            }
-
-            int targetWidth = ParseInt(_tbTargetWidth, 0, 2, 32767);
-            int targetHeight = ParseInt(_tbTargetHeight, 0, 2, 32767);
-            if (targetWidth < 2 || targetHeight < 2)
-            {
-                Toast("目标分辨率无效");
-                return;
-            }
-
-            Rectangle b = ScreenOf(it).Bounds;
-            Point targetPoint = ConvertFovCoordinates(it,
-                new Size(targetWidth, targetHeight), target);
-            Point desktopPoint = new Point(
-                (int)Math.Round((double)targetPoint.X * b.Width / targetWidth),
-                (int)Math.Round((double)targetPoint.Y * b.Height / targetHeight));
-            it.Centered = false;
-            it.X = desktopPoint.X;
-            it.Y = desktopPoint.Y;
-            AfterEdit();
-            _lblFovResult.Text = "目标点 " + targetPoint.X + ", " + targetPoint.Y +
-                " → 当前屏幕 " + it.X + ", " + it.Y;
-            _lblFovResult.ForeColor = Theme.Green;
-            Toast("FOV " + target.ToString("0.##", CultureInfo.InvariantCulture) +
-                "° 坐标已应用");
         }
 
         internal static Point ConvertFovCoordinates(CrosshairItemSettings it, Size size, double target)
@@ -460,23 +370,5 @@ namespace ScreenCrosshair
             return n;
         }
 
-        private void SyncFovUi(CrosshairItemSettings it)
-        {
-            if (_tbFovBase == null || it == null) return;
-            _tbFovBase.Text = it.FovReference.ToString("0.###", CultureInfo.InvariantCulture);
-            if (it.FovReferenceSet)
-            {
-                string size = it.FovReferenceWidth > 0
-                    ? "   " + it.FovReferenceWidth + "×" + it.FovReferenceHeight
-                    : "";
-                _lblFovBasePoint.Text = "基准点  X " + it.FovReferenceX + "   Y " + it.FovReferenceY + size;
-                _lblFovBasePoint.ForeColor = Theme.TextMuted;
-            }
-            else
-            {
-                _lblFovBasePoint.Text = "未记录基准点";
-                _lblFovBasePoint.ForeColor = Theme.TextFaint;
-            }
-        }
     }
 }
