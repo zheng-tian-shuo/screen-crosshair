@@ -204,12 +204,6 @@ namespace ScreenCrosshair
             L.Add(pre + "X=" + it.X);
             L.Add(pre + "Y=" + it.Y);
             L.Add(pre + "Screen=" + (it.ScreenName == null ? "" : it.ScreenName));
-            L.Add(pre + "FovReferenceSet=" + (it.FovReferenceSet ? "1" : "0"));
-            L.Add(pre + "FovReference=" + it.FovReference.ToString("0.###", CultureInfo.InvariantCulture));
-            L.Add(pre + "FovReferenceX=" + it.FovReferenceX);
-            L.Add(pre + "FovReferenceY=" + it.FovReferenceY);
-            L.Add(pre + "FovReferenceWidth=" + it.FovReferenceWidth);
-            L.Add(pre + "FovReferenceHeight=" + it.FovReferenceHeight);
             // Keep custom ticks when temporarily using another shape.
             {
                 L.Add(pre + "TickCount=" + it.TickCount);

@@ -27,7 +27,31 @@ public class SettingsPositionRegression
     }
     public static void Run()
     {
+        Point projected = ProjectionMath.ConvertHorizontalFov(
+            new Point(953, 975), new Size(1920, 1080), 90.0,
+            new Size(1920, 1200), 90.0, 16.0 / 9.0);
+        Check(projected == new Point(953, 1083),
+            "FOV projection uses the entered target height");
+        Point changedHeight = ProjectionMath.ConvertHorizontalFov(
+            new Point(953, 975), new Size(1920, 1080), 90.0,
+            new Size(1920, 1440), 90.0, 16.0 / 9.0);
+        Check(changedHeight == new Point(953, 1300),
+            "changing target height changes the generated position");
+        MethodInfo parseResolution = typeof(MainForm).GetMethod("TryResolution",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        object[] resolution = { "1280", "720", 0, 0 };
+        Check((bool)parseResolution.Invoke(null, resolution) && (int)resolution[2] == 1280 &&
+            (int)resolution[3] == 720, "custom resolution is preserved");
+        foreach (string invalid in new string[] { "", "abc", "1", "32768", "-1", "1080.5" })
+        {
+            Check(!(bool)parseResolution.Invoke(null, new object[] { invalid, "1080", 0, 0 }) &&
+                !(bool)parseResolution.Invoke(null, new object[] { "1920", invalid, 0, 0 }),
+                "invalid resolution is rejected: " + invalid);
+        }
+
         AppSettings cfg = new AppSettings();
+        Check(!cfg.BuildLines().Exists(line => line.Contains("FovReference")),
+            "unused FOV reference metadata is no longer saved");
         cfg.Items[0].Shape = CrosshairShape.Dot;
         cfg.Items[0].TickCount = 17;
         cfg.Items[0].LabelStart = 99999;

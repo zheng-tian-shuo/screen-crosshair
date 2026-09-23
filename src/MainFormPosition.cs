@@ -118,7 +118,7 @@ namespace ScreenCrosshair
             // ---- FOV 坐标换算 ----
             Card c4 = NewCard(pg, "FOV / 分辨率坐标换算", 920, 220);
             _pgCards.Add(c4);
-            Ui.L(c4, "目标 FOV", Theme.Body, Theme.TextMuted, 14, 42, 72, 20);
+            Ui.L(c4, "水平 FOV", Theme.Body, Theme.TextMuted, 14, 42, 72, 20);
             _tbFovTarget = Ui.NumBox(c4, 96, 39, 64);
             Ui.L(c4, "°", Theme.Body, Theme.TextFaint, 164, 42, 18, 20);
 
@@ -130,7 +130,7 @@ namespace ScreenCrosshair
             _tbTargetAspect = Ui.Box(c4, 78, 107, 64);
             _tbTargetAspect.Text = "16:9";
             _tbTargetAspect.TextAlign = HorizontalAlignment.Center;
-            Ui.L(c4, "默认 16:9", Theme.Small, Theme.TextFaint, 150, 110, 80, 20);
+            Ui.L(c4, "游戏画面比例（默认 16:9）", Theme.Small, Theme.TextFaint, 150, 110, 290, 20);
             SetTargetResolutionFromScreen();
             FlatBtn currentSize = new FlatBtn();
             currentSize.Text = "识别分辨率";
@@ -145,7 +145,7 @@ namespace ScreenCrosshair
             convert.Click += delegate { GenerateTemplatePoint(); };
             c4.Controls.Add(convert);
 
-            _lblFovResult = Ui.L(c4, "输入目标 FOV 和宽高比后生成",
+            _lblFovResult = Ui.L(c4, "按所填分辨率和比例换算到目标屏幕",
                 Theme.Small, Theme.TextMuted, 170, 144, 270, 32);
             _lblFovResult.TextAlign = ContentAlignment.MiddleLeft;
 
@@ -216,36 +216,22 @@ namespace ScreenCrosshair
                 Toast("\u5bbd\u9ad8\u6bd4\u683c\u5f0f\u5e94\u4e3a 16:9 \u6216 1.777");
                 return;
             }
-            SetTargetResolutionFromScreen();
-            int targetWidth = ParseInt(_tbTargetWidth, 0, 2, 32767);
-            int targetHeight = ParseInt(_tbTargetHeight, 0, 2, 32767);
-            if (targetWidth < 2 || targetHeight < 2)
+            int targetWidth, targetHeight;
+            if (!TryResolution(_tbTargetWidth.Text, _tbTargetHeight.Text, out targetWidth, out targetHeight))
             {
-                Toast("\u65e0\u6cd5\u8bc6\u522b\u5f53\u524d\u5c4f\u5e55\u5206\u8fa8\u7387");
-                return;
-            }
-            int projectionHeight = (int)Math.Round(targetWidth / aspect);
-            if (projectionHeight < 2 || projectionHeight > 32767)
-            {
-                Toast("\u8be5\u5bbd\u9ad8\u6bd4\u4e0b\u76ee\u6807\u753b\u9762\u9ad8\u5ea6\u65e0\u6548");
+                Toast("\u76ee\u6807\u5206\u8fa8\u7387\u8981\u586b 2 \u5230 32767 \u4e4b\u95f4\u7684\u6574\u6570");
                 return;
             }
             Point projected = ProjectionMath.ConvertHorizontalFov(
                 new Point(953, 975), new Size(1920, 1080), 90.0,
-                new Size(targetWidth, projectionHeight), targetFov, aspect);
+                new Size(targetWidth, targetHeight), targetFov, aspect);
             Screen screen = ScreenOf(it);
             if (screen == null) screen = Screen.PrimaryScreen;
             if (screen == null) { Toast("\u65e0\u6cd5\u8bc6\u522b\u5f53\u524d\u5c4f\u5e55"); return; }
             Rectangle desktop = screen.Bounds;
             Point generated = new Point(
                 (int)Math.Round((double)projected.X * desktop.Width / targetWidth),
-                ClampPixel((int)Math.Round((double)projected.Y * desktop.Height / projectionHeight)));
-            it.FovReferenceSet = true;
-            it.FovReference = 90.0;
-            it.FovReferenceX = 953;
-            it.FovReferenceY = 975;
-            it.FovReferenceWidth = 1920;
-            it.FovReferenceHeight = 1080;
+                ClampPixel((int)Math.Round((double)projected.Y * desktop.Height / targetHeight)));
             it.Centered = false;
             it.X = generated.X;
             it.Y = generated.Y;
@@ -302,6 +288,14 @@ namespace ScreenCrosshair
             if (t == null || !double.TryParse(t.Text.Trim(), NumberStyles.Float,
                 CultureInfo.InvariantCulture, out fov)) return false;
             return fov > 1.0 && fov < 179.0;
+        }
+
+        internal static bool TryResolution(string width, string height, out int w, out int h)
+        {
+            w = h = 0;
+            return int.TryParse(width, NumberStyles.Integer, CultureInfo.InvariantCulture, out w) &&
+                int.TryParse(height, NumberStyles.Integer, CultureInfo.InvariantCulture, out h) &&
+                w >= 2 && w <= 32767 && h >= 2 && h <= 32767;
         }
 
         private static int ClampPixel(int n)
