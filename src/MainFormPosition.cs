@@ -152,8 +152,6 @@ namespace ScreenCrosshair
             Ui.L(c4, "模板基准：FOV 90 · 1920×1080 · X953 Y975",
                 Theme.Small, Theme.TextFaint, 14, 182, 426, 20);
 
-            Ui.L(c4, "结果会映射到当前全屏。",
-                Theme.Small, Theme.TextFaint, 14, 248, 426, 20);
         }
 
         private void SetTargetResolutionFromScreen()
