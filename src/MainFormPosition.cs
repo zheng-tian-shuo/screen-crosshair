@@ -149,7 +149,7 @@ namespace ScreenCrosshair
                 Theme.Small, Theme.TextMuted, 170, 144, 270, 32);
             _lblFovResult.TextAlign = ContentAlignment.MiddleLeft;
 
-            Ui.L(c4, "模板基准：FOV 90 · 1920×1080 · X953 Y982",
+            Ui.L(c4, "模板基准：FOV 90 · 1920×1080 · X953 Y975",
                 Theme.Small, Theme.TextFaint, 14, 182, 426, 20);
 
             FlatBtn keep = new FlatBtn();
@@ -243,7 +243,7 @@ namespace ScreenCrosshair
                 return;
             }
             Point projected = ProjectionMath.ConvertHorizontalFov(
-                new Point(953, 982), new Size(1920, 1080), 90.0,
+                new Point(953, 975), new Size(1920, 1080), 90.0,
                 new Size(targetWidth, projectionHeight), targetFov, aspect);
             Screen screen = ScreenOf(it);
             if (screen == null) screen = Screen.PrimaryScreen;
@@ -255,7 +255,7 @@ namespace ScreenCrosshair
             it.FovReferenceSet = true;
             it.FovReference = 90.0;
             it.FovReferenceX = 953;
-            it.FovReferenceY = 982;
+            it.FovReferenceY = 975;
             it.FovReferenceWidth = 1920;
             it.FovReferenceHeight = 1080;
             it.Centered = false;
