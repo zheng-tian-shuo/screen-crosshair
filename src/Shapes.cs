@@ -60,6 +60,12 @@ namespace ScreenCrosshair
         public int FovReferenceHeight;
         public string ScreenName; // 目标屏幕 DeviceName，空=鼠标/游戏所在屏
 
+        public double TargetFov = 90.0;
+        public int TargetWidth, TargetHeight; // 0 = first use, fill from target screen
+        public string TargetAspect = "16:9";
+        public ProjectionDisplayMode DisplayMode = ProjectionDisplayMode.Stretch;
+        public int WindowOriginX, WindowOriginY; // game image origin relative to target screen
+
         // 分划板参数
         public int TickCount;    // 刻度数量
         public int TickSpacing;  // 刻度间距（像素）

@@ -78,6 +78,7 @@ namespace ScreenCrosshair
         /// <summary>改完设置统一走这里：同步只读显示、刷新覆盖层与预览、延迟落盘</summary>
         private void AfterEdit()
         {
+            ResetFovResult();
             CrosshairItemSettings it = Cur();
             if (it != null)
             {

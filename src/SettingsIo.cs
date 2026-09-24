@@ -24,6 +24,17 @@ namespace ScreenCrosshair
             it.X = IniBag.I(d, pre + "X", 0, -32768, 32767);
             it.Y = IniBag.I(d, pre + "Y", 0, -32768, 32767);
             it.ScreenName = IniBag.S(d, pre + "Screen", "");
+            it.TargetFov = IniBag.D(d, pre + "TargetFov", 90.0, 1.0, 179.0);
+            if (it.TargetFov <= 1.0 || it.TargetFov >= 179.0) it.TargetFov = 90.0;
+            it.TargetWidth = IniBag.I(d, pre + "TargetWidth", 0, 0, 32767);
+            it.TargetHeight = IniBag.I(d, pre + "TargetHeight", 0, 0, 32767);
+            if (it.TargetWidth < 2 || it.TargetHeight < 2) it.TargetWidth = it.TargetHeight = 0;
+            it.TargetAspect = IniBag.S(d, pre + "TargetAspect", "16:9");
+            double aspect;
+            if (!ProjectionMath.TryAspectRatio(it.TargetAspect, out aspect)) it.TargetAspect = "16:9";
+            it.DisplayMode = (ProjectionDisplayMode)IniBag.I(d, pre + "DisplayMode", 0, 0, 2);
+            it.WindowOriginX = IniBag.I(d, pre + "WindowOriginX", 0, 0, 32767);
+            it.WindowOriginY = IniBag.I(d, pre + "WindowOriginY", 0, 0, 32767);
             it.FovReferenceSet = IniBag.B(d, pre + "FovReferenceSet", false);
             it.FovReference = IniBag.D(d, pre + "FovReference", 90.0, 1.0, 179.0);
             it.FovReferenceX = IniBag.I(d, pre + "FovReferenceX", 0, -32768, 32767);
@@ -204,6 +215,13 @@ namespace ScreenCrosshair
             L.Add(pre + "X=" + it.X);
             L.Add(pre + "Y=" + it.Y);
             L.Add(pre + "Screen=" + (it.ScreenName == null ? "" : it.ScreenName));
+            L.Add(pre + "TargetFov=" + it.TargetFov.ToString("R", CultureInfo.InvariantCulture));
+            L.Add(pre + "TargetWidth=" + it.TargetWidth);
+            L.Add(pre + "TargetHeight=" + it.TargetHeight);
+            L.Add(pre + "TargetAspect=" + it.TargetAspect);
+            L.Add(pre + "DisplayMode=" + (int)it.DisplayMode);
+            L.Add(pre + "WindowOriginX=" + it.WindowOriginX);
+            L.Add(pre + "WindowOriginY=" + it.WindowOriginY);
             // Keep custom ticks when temporarily using another shape.
             {
                 L.Add(pre + "TickCount=" + it.TickCount);

@@ -33,8 +33,7 @@ namespace ScreenCrosshair
                     _tbX.Text = it.X.ToString();
                     _tbY.Text = it.Y.ToString();
                     _cbScreen.SelectedIndex = ScreenIndexOf(it.ScreenName);
-                    if (_tbFovTarget != null && string.IsNullOrEmpty(_tbFovTarget.Text))
-                        _tbFovTarget.Text = "90";
+                    SyncFovUi(it);
 
                     _sTickCount.SetSilent(it.TickCount);
                     _sTickSpace.SetSilent(it.TickSpacing);

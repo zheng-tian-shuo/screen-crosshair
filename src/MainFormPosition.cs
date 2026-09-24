@@ -16,7 +16,10 @@ namespace ScreenCrosshair
         private TextBox _tbFovTarget;
         private TextBox _tbTargetWidth, _tbTargetHeight;
         private TextBox _tbTargetAspect;
-        private Label _lblFovResult;
+        private TextBox _tbWindowX, _tbWindowY;
+        private ComboBox _cbDisplayMode;
+        private Label _lblFovResult, _lblFovHint, _lblTargetSize;
+        private bool _syncingFov;
 
         private void BuildPositionCards()
         {
@@ -116,13 +119,13 @@ namespace ScreenCrosshair
                 Theme.Small, Theme.TextFaint, 14, 252, 426, 20);
 
             // ---- FOV 坐标换算 ----
-            Card c4 = NewCard(pg, "FOV / 分辨率坐标换算", 920, 220);
+            Card c4 = NewCard(pg, "FOV / 分辨率坐标换算", 920, 332);
             _pgCards.Add(c4);
             Ui.L(c4, "水平 FOV", Theme.Body, Theme.TextMuted, 14, 42, 72, 20);
             _tbFovTarget = Ui.NumBox(c4, 96, 39, 64);
             Ui.L(c4, "°", Theme.Body, Theme.TextFaint, 164, 42, 18, 20);
 
-            Ui.L(c4, "目标分辨率", Theme.Body, Theme.TextMuted, 14, 76, 68, 20);
+            _lblTargetSize = Ui.L(c4, "目标分辨率", Theme.Body, Theme.TextMuted, 14, 76, 76, 20);
             _tbTargetWidth = Ui.NumBox(c4, 96, 73, 64);
             Ui.L(c4, "×", Theme.Body, Theme.TextFaint, 162, 76, 12, 20);
             _tbTargetHeight = Ui.NumBox(c4, 178, 73, 64);
@@ -133,25 +136,41 @@ namespace ScreenCrosshair
             Ui.L(c4, "游戏画面比例（默认 16:9）", Theme.Small, Theme.TextFaint, 150, 110, 290, 20);
             SetTargetResolutionFromScreen();
             FlatBtn currentSize = new FlatBtn();
-            currentSize.Text = "识别分辨率";
-            currentSize.Bounds = new Rectangle(260, 73, 90, 26);
+            currentSize.Text = "使用屏幕尺寸";
+            currentSize.Bounds = new Rectangle(260, 73, 110, 26);
             currentSize.Click += delegate { SetTargetResolutionFromScreen(); };
             c4.Controls.Add(currentSize);
+
+            Ui.L(c4, "显示方式", Theme.Body, Theme.TextMuted, 14, 144, 72, 20);
+            _cbDisplayMode = Ui.Combo(c4, 96, 141, 272);
+            _cbDisplayMode.Items.AddRange(new object[] {
+                "全屏拉伸", "保持比例（黑边）", "窗口（手填画面区域）" });
+            _cbDisplayMode.SelectedIndex = 0;
+            Ui.L(c4, "窗口左上角", Theme.Body, Theme.TextMuted, 14, 178, 76, 20);
+            Ui.L(c4, "X", Theme.Body, Theme.TextMuted, 96, 178, 18, 20);
+            _tbWindowX = Ui.NumBox(c4, 116, 175, 64);
+            Ui.L(c4, "Y", Theme.Body, Theme.TextMuted, 196, 178, 18, 20);
+            _tbWindowY = Ui.NumBox(c4, 216, 175, 64);
+            _lblFovHint = Ui.L(c4, "", Theme.Small, Theme.TextMuted, 14, 210, 426, 36);
 
             FlatBtn convert = new FlatBtn();
             convert.Kind = 1;
             convert.Text = "自动生成准星位置";
-            convert.Bounds = new Rectangle(14, 144, 136, 30);
+            convert.Bounds = new Rectangle(14, 258, 136, 30);
             convert.Click += delegate { GenerateTemplatePoint(); };
             c4.Controls.Add(convert);
 
-            _lblFovResult = Ui.L(c4, "按所填分辨率和比例换算到目标屏幕",
-                Theme.Small, Theme.TextMuted, 170, 144, 270, 32);
+            _lblFovResult = Ui.L(c4, "确认参数后生成",
+                Theme.Small, Theme.TextMuted, 170, 250, 270, 44);
             _lblFovResult.TextAlign = ContentAlignment.MiddleLeft;
 
             Ui.L(c4, "模板基准：FOV 90 · 1920×1080 · X953 Y975",
-                Theme.Small, Theme.TextFaint, 14, 182, 426, 20);
-
+                Theme.Small, Theme.TextFaint, 14, 304, 426, 20);
+            foreach (TextBox box in new TextBox[] { _tbFovTarget, _tbTargetWidth,
+                _tbTargetHeight, _tbTargetAspect, _tbWindowX, _tbWindowY })
+                box.TextChanged += FovInputChanged;
+            _cbDisplayMode.SelectedIndexChanged += FovInputChanged;
+            UpdateFovModeUi();
         }
 
         private void SetTargetResolutionFromScreen()
@@ -160,8 +179,14 @@ namespace ScreenCrosshair
             Screen screen = ScreenOf(Cur());
             if (screen == null) screen = Screen.PrimaryScreen;
             if (screen == null) return;
-            _tbTargetWidth.Text = screen.Bounds.Width.ToString();
-            _tbTargetHeight.Text = screen.Bounds.Height.ToString();
+            _syncingFov = true;
+            try
+            {
+                _tbTargetWidth.Text = screen.Bounds.Width.ToString();
+                _tbTargetHeight.Text = screen.Bounds.Height.ToString();
+            }
+            finally { _syncingFov = false; }
+            if (_cbDisplayMode != null) FovInputChanged(null, EventArgs.Empty);
         }
 
         private void FillScreens()
@@ -182,56 +207,147 @@ namespace ScreenCrosshair
 
         private static bool TryAspectRatio(TextBox textBox, out double ratio)
         {
-            ratio = 0;
-            string text = textBox == null ? "" : textBox.Text.Trim().Replace('\uFF1A', ':');
-            string[] parts = text.Split(':');
-            double width, height;
-            if (parts.Length == 2)
+            return ProjectionMath.TryAspectRatio(textBox == null ? "" : textBox.Text, out ratio);
+        }
+
+        private void SyncFovUi(CrosshairItemSettings it)
+        {
+            if (_tbFovTarget == null || it == null) return;
+            _syncingFov = true;
+            try
             {
-                if (!double.TryParse(parts[0].Trim(), NumberStyles.Float,
-                    CultureInfo.InvariantCulture, out width) ||
-                    !double.TryParse(parts[1].Trim(), NumberStyles.Float,
-                    CultureInfo.InvariantCulture, out height) || height <= 0)
-                    return false;
-                ratio = width / height;
+                _tbFovTarget.Text = it.TargetFov.ToString("R", CultureInfo.InvariantCulture);
+                _tbTargetAspect.Text = it.TargetAspect;
+                Size size = new Size(it.TargetWidth, it.TargetHeight);
+                if (size.Width < 2 || size.Height < 2)
+                {
+                    Screen screen = ScreenOf(it);
+                    if (screen != null) size = screen.Bounds.Size;
+                }
+                _tbTargetWidth.Text = size.Width.ToString();
+                _tbTargetHeight.Text = size.Height.ToString();
+                _cbDisplayMode.SelectedIndex = (int)it.DisplayMode;
+                _tbWindowX.Text = it.WindowOriginX.ToString();
+                _tbWindowY.Text = it.WindowOriginY.ToString();
             }
-            else if (!double.TryParse(text, NumberStyles.Float,
-                CultureInfo.InvariantCulture, out ratio)) return false;
-            return ratio > 0.1 && ratio < 10.0 &&
-                !double.IsNaN(ratio) && !double.IsInfinity(ratio);
+            finally { _syncingFov = false; }
+            UpdateFovModeUi();
+            ResetFovResult();
+        }
+
+        private void UpdateFovModeUi()
+        {
+            bool window = _cbDisplayMode.SelectedIndex == (int)ProjectionDisplayMode.Window;
+            _tbWindowX.Enabled = _tbWindowY.Enabled = window;
+            _lblTargetSize.Text = window ? "画面大小" : "目标分辨率";
+            _lblFovHint.Text = window
+                ? "填写游戏画面的实际像素大小和左上角位置（不含边框）。\n左上角相对目标屏幕；移动或缩放窗口后需重新填写。"
+                : (_cbDisplayMode.SelectedIndex == (int)ProjectionDisplayMode.Fit
+                    ? "按所填宽高比居中显示，自动扣除上下或左右黑边。"
+                    : "游戏画面拉伸并铺满目标屏幕时使用。\n有黑边请选择「保持比例」，窗口模式请填写画面区域。");
+        }
+
+        private void FovInputChanged(object sender, EventArgs e)
+        {
+            if (_loading || _syncingFov) return;
+            UpdateFovModeUi();
+            ResetFovResult("参数已修改，请重新生成");
+            SaveFovInputs();
+        }
+
+        private void SaveFovInputs()
+        {
+            CrosshairItemSettings it = Cur();
+            if (it == null) return;
+            double value;
+            int width, height, x, y;
+            if (TryFov(_tbFovTarget, out value)) it.TargetFov = value;
+            if (TryAspectRatio(_tbTargetAspect, out value)) it.TargetAspect = _tbTargetAspect.Text.Trim();
+            if (TryResolution(_tbTargetWidth.Text, _tbTargetHeight.Text, out width, out height))
+            {
+                it.TargetWidth = width;
+                it.TargetHeight = height;
+            }
+            if (_cbDisplayMode.SelectedIndex >= 0)
+                it.DisplayMode = (ProjectionDisplayMode)_cbDisplayMode.SelectedIndex;
+            if (TryWindowOrigin(out x, out y))
+            {
+                it.WindowOriginX = x;
+                it.WindowOriginY = y;
+            }
+            SaveSoon();
+        }
+
+        private bool TryWindowOrigin(out int x, out int y)
+        {
+            x = y = 0;
+            return int.TryParse(_tbWindowX.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out x) &&
+                int.TryParse(_tbWindowY.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out y) &&
+                x >= 0 && x <= 32767 && y >= 0 && y <= 32767;
+        }
+
+        private void ResetFovResult(string message = "确认参数后生成")
+        {
+            if (_lblFovResult == null) return;
+            _lblFovResult.Text = message;
+            _lblFovResult.ForeColor = Theme.TextMuted;
+            if (_toast != null && _toast.Text.StartsWith("已生成准星位置")) _toast.Visible = false;
+        }
+
+        private void FovFailure(string message)
+        {
+            _lblFovResult.Text = message;
+            _lblFovResult.ForeColor = Theme.Danger;
+            Toast(message);
         }
 
         private void GenerateTemplatePoint()
         {
             CrosshairItemSettings it = Cur();
             if (it == null) return;
+            ResetFovResult();
             double targetFov, aspect;
             if (!TryFov(_tbFovTarget, out targetFov))
             {
-                Toast("\u76ee\u6807 FOV \u8981\u586b 1 \u5230 179 \u4e4b\u95f4\u7684\u6570\u5b57");
+                FovFailure("水平 FOV 要大于 1 且小于 179");
                 return;
             }
             if (!TryAspectRatio(_tbTargetAspect, out aspect))
             {
-                Toast("\u5bbd\u9ad8\u6bd4\u683c\u5f0f\u5e94\u4e3a 16:9 \u6216 1.777");
+                FovFailure("宽高比格式应为 16:9 或 1.777");
                 return;
             }
             int targetWidth, targetHeight;
             if (!TryResolution(_tbTargetWidth.Text, _tbTargetHeight.Text, out targetWidth, out targetHeight))
             {
-                Toast("\u76ee\u6807\u5206\u8fa8\u7387\u8981\u586b 2 \u5230 32767 \u4e4b\u95f4\u7684\u6574\u6570");
+                FovFailure("画面宽高要填 2 到 32767 之间的整数");
                 return;
             }
-            Point projected = ProjectionMath.ConvertHorizontalFov(
-                new Point(953, 975), new Size(1920, 1080), 90.0,
-                new Size(targetWidth, targetHeight), targetFov, aspect);
             Screen screen = ScreenOf(it);
             if (screen == null) screen = Screen.PrimaryScreen;
-            if (screen == null) { Toast("\u65e0\u6cd5\u8bc6\u522b\u5f53\u524d\u5c4f\u5e55"); return; }
-            Rectangle desktop = screen.Bounds;
-            Point generated = new Point(
-                (int)Math.Round((double)projected.X * desktop.Width / targetWidth),
-                ClampPixel((int)Math.Round((double)projected.Y * desktop.Height / targetHeight)));
+            if (screen == null) { FovFailure("无法识别当前屏幕"); return; }
+            ProjectionDisplayMode mode = (ProjectionDisplayMode)_cbDisplayMode.SelectedIndex;
+            int originX = 0, originY = 0;
+            if (mode == ProjectionDisplayMode.Window && !TryWindowOrigin(out originX, out originY))
+            {
+                FovFailure("窗口左上角要填 0 到 32767 之间的整数");
+                return;
+            }
+            Rectangle viewport;
+            if (!ProjectionMath.TryGetViewport(screen.Bounds.Size, new Size(targetWidth, targetHeight),
+                aspect, mode, new Point(originX, originY), out viewport))
+            {
+                FovFailure("画面区域必须完整位于目标屏幕内");
+                return;
+            }
+            Point generated;
+            if (!ProjectionMath.TryConvertHorizontalFov(new Point(953, 975), new Size(1920, 1080),
+                90.0, viewport, targetFov, aspect, out generated))
+            {
+                FovFailure("模板点超出当前视野，已保留原位置");
+                return;
+            }
+            SaveFovInputs();
             it.Centered = false;
             it.X = generated.X;
             it.Y = generated.Y;
@@ -296,13 +412,6 @@ namespace ScreenCrosshair
             return int.TryParse(width, NumberStyles.Integer, CultureInfo.InvariantCulture, out w) &&
                 int.TryParse(height, NumberStyles.Integer, CultureInfo.InvariantCulture, out h) &&
                 w >= 2 && w <= 32767 && h >= 2 && h <= 32767;
-        }
-
-        private static int ClampPixel(int n)
-        {
-            if (n < 0) return 0;
-            if (n > 32767) return 32767;
-            return n;
         }
 
     }

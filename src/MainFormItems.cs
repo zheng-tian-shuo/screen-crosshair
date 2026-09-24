@@ -65,6 +65,7 @@ namespace ScreenCrosshair
             if (idx < 0) return;
             SaveSoon();
             if (idx >= 0 && idx != _cfg.SelectedItem) return;   // 拖的不是当前选中的就只存不刷界面
+            ResetFovResult();
             _loading = true;
             try
             {
