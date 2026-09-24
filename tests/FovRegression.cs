@@ -24,7 +24,7 @@ namespace ScreenCrosshair
             _tbTargetAspect.Text = aspect;
             _tbTargetWidth.Text = width.ToString();
             _tbTargetHeight.Text = height.ToString();
-            _cbDisplayMode.SelectedIndex = (int)mode;
+            SetProjectionMode(mode);
             _tbWindowX.Text = x.ToString();
             _tbWindowY.Text = y.ToString();
         }
@@ -127,7 +127,7 @@ namespace ScreenCrosshair
                 reopened.PushToUi();
                 CheckFov(reopened._tbFovTarget.Text == "100" && reopened._tbTargetAspect.Text == "4:3" &&
                     reopened._tbTargetWidth.Text == "640" && reopened._tbTargetHeight.Text == "360" &&
-                    reopened._cbDisplayMode.SelectedIndex == 2 && reopened._tbWindowX.Text == "37" &&
+                    reopened.SelectedProjectionMode() == ProjectionDisplayMode.Window && reopened._tbWindowX.Text == "37" &&
                     reopened._tbWindowY.Text == "53", "restart restores every generation input");
                 reopened.GenerateTemplatePoint();
                 CheckFov(reopened.FovPoint() == savedPoint, "regeneration after restart keeps the same point");
@@ -143,7 +143,7 @@ namespace ScreenCrosshair
             _tbFovTarget.Text = "110";
             _cbItem.SelectedIndex = 0;
             CheckFov(_tbFovTarget.Text == "100" && _tbTargetAspect.Text == "4:3" &&
-                _cbDisplayMode.SelectedIndex == 2, "switching crosshairs restores each one's parameters");
+                SelectedProjectionMode() == ProjectionDisplayMode.Window, "switching crosshairs restores each one's parameters");
             _tbFovTarget.Text = "101";
             CheckFov(first.TargetFov == 101, "valid edits are saved before clicking generate");
             _tbFovTarget.Text = "100";
@@ -171,9 +171,9 @@ namespace ScreenCrosshair
             {
                 SwitchTheme(light);
                 foreach (ProjectionDisplayMode mode in new ProjectionDisplayMode[] {
-                    ProjectionDisplayMode.Stretch, ProjectionDisplayMode.Fit, ProjectionDisplayMode.Window })
+                    ProjectionDisplayMode.Stretch, ProjectionDisplayMode.Fit, ProjectionDisplayMode.Window, ProjectionDisplayMode.WindowFit })
                 {
-                    _cbDisplayMode.SelectedIndex = (int)mode;
+                    SetProjectionMode(mode);
                     GenerateTemplatePoint();
                     Control card = _lblFovResult.Parent;
                     _pages[PageCrosshair].ScrollControlIntoView(card);
@@ -185,11 +185,116 @@ namespace ScreenCrosshair
                     }
                 }
             }
-            Console.WriteLine("PASS rendered all three display modes in both themes at scale " + Theme.K);
+            Console.WriteLine("PASS rendered all four display modes in both themes at scale " + Theme.K);
             _cfg.ReadFrom(new string[] { "[app]", "ProfileCount=1", "[profile0]", "Count=1",
                 "0.TargetFov=NaN", "0.TargetAspect=Infinity", "0.TargetWidth=1", "0.TargetHeight=1080" });
             CheckFov(Cur().TargetFov == 90 && Cur().TargetAspect == "16:9" && Cur().TargetWidth == 0,
                 "invalid saved generation inputs fall back to safe defaults");
+        }
+
+        private void CheckAdaptivePosition()
+        {
+            Rectangle viewport;
+            Point p;
+            CheckFov(ProjectionMath.TryGetViewport(new Size(1920, 1080), new Size(1280, 800),
+                16.0 / 9.0, ProjectionDisplayMode.WindowFit, new Point(91, 105), out viewport) &&
+                viewport == new Rectangle(91, 145, 1280, 720) &&
+                ProjectionMath.TryConvertHorizontalFov(new Point(953, 975), new Size(1920, 1080),
+                    90, viewport, 90, 16.0 / 9.0, out p) && p == new Point(726, 795),
+                "window letterbox projection includes client origin and both top/bottom bars");
+            CheckFov(ProjectionMath.TryGetViewport(new Size(1920, 1080), new Size(1280, 720),
+                4.0 / 3.0, ProjectionDisplayMode.WindowFit, new Point(91, 105), out viewport) &&
+                viewport == new Rectangle(251, 105, 960, 720),
+                "window pillarbox projection stays inside captured client area");
+            foreach (ProjectionDisplayMode mode in new ProjectionDisplayMode[] {
+                ProjectionDisplayMode.Stretch, ProjectionDisplayMode.Fit })
+            {
+                CrosshairItemSettings item = new CrosshairItemSettings();
+                item.Centered = false;
+                item.AutoScreenPosition = true;
+                item.AppliedDisplayMode = mode;
+                item.RefreshGeneratedPosition(new Size(2560, 1600));
+                Point desktop = new Point(item.X, item.Y);
+                CheckFov(desktop == new Point(1271, mode == ProjectionDisplayMode.Fit ? 1380 : 1444),
+                    mode + " starts at the expected desktop point");
+                using (OverlayForm overlay = new OverlayForm(item))
+                {
+                    item.RefreshGeneratedPosition(new Size(1920, 1080));
+                    overlay.RefreshPosition(new Rectangle(-1920, 80, 1920, 1080));
+                    CheckFov(new Point(item.X, item.Y) == new Point(953, 975) &&
+                        overlay.Left + overlay.Width / 2 == -967 &&
+                        overlay.Top + overlay.Height / 2 == 1055,
+                        mode + " output change maps to the new monitor geometry");
+                    overlay.Location = new Point(0, 0);
+                    CheckFov(item.AutoScreenPosition && item.X == 953 && item.Y == 975,
+                        "OS relocation cannot overwrite the generated point");
+                    overlay.SetMoveMode(true);
+                    overlay.Location = new Point(5, 5);
+                    CheckFov(item.AutoScreenPosition, "enabling drag alone does not mistake OS movement for user input");
+                }
+                for (int i = 0; i < 3; i++)
+                {
+                    item.RefreshGeneratedPosition(new Size(2560, 1600));
+                    CheckFov(new Point(item.X, item.Y) == desktop, mode + " returns without rounding drift");
+                    item.RefreshGeneratedPosition(new Size(1920, 1080));
+                }
+            }
+
+            _cfg = new AppSettings();
+            _cfg.GlobalVisible = false;
+            RebuildOverlays();
+            PushToUi();
+            ConfigureFov("90", "16:9", 1920, 1080, ProjectionDisplayMode.Stretch, 0, 0);
+            GenerateTemplatePoint();
+            CrosshairItemSettings current = Cur();
+            CheckFov(current.AutoScreenPosition, "generation enables resolution tracking for borderless/fullscreen");
+            _tbFovTarget.Text = "60";
+            GenerateTemplatePoint();
+            CheckFov(current.AutoScreenPosition && current.AppliedFov == 90 && current.TargetFov == 60,
+                "failed generation preserves the applied snapshot separately from draft inputs");
+            _cfg.SaveToDisk();
+            CrosshairItemSettings restored = AppSettings.Load().Items[0];
+            restored.RefreshGeneratedPosition(new Size(1920, 1080));
+            CheckFov(restored.AutoScreenPosition && restored.X == 953 && restored.Y == 975 && restored.TargetFov == 60,
+                "restart restores last successful projection rather than pending draft parameters");
+            foreach (string screenName in new string[] { "", Screen.PrimaryScreen.DeviceName })
+            {
+                current.ScreenName = screenName;
+                current.X = -100;
+                current.Y = -100;
+                RefreshScreenPositions();
+                CheckFov(current.X >= 0 && current.Y >= 0 && _tbFovTarget.Text == "60" && !_ovl[0].Visible,
+                    "hidden fixed/follow-screen items refresh without changing draft text");
+            }
+            PushToUi();
+            CommitXy();
+            CheckFov(current.AutoScreenPosition, "leaving untouched XY boxes keeps automatic positioning");
+            _sSize.Value = Math.Min(100, current.Size + 1);
+            UiChanged(_sSize, EventArgs.Empty);
+            CheckFov(current.AutoScreenPosition, "appearance changes retain automatic positioning");
+            _tbX.Text = "123";
+            CommitXy();
+            CheckFov(!current.AutoScreenPosition && current.X == 123, "manual XY input disables automatic positioning");
+            _tbFovTarget.Text = "90";
+            GenerateTemplatePoint();
+            using (Button nudge = new Button())
+            {
+                nudge.Tag = new Point(1, 0);
+                NudgeClick(nudge, EventArgs.Empty);
+            }
+            CheckFov(!current.AutoScreenPosition, "nudge disables automatic positioning");
+            GenerateTemplatePoint();
+            BackToCenter();
+            CheckFov(!current.AutoScreenPosition && current.Centered, "centering disables automatic positioning");
+            ConfigureFov("90", "16:9", 640, 400, ProjectionDisplayMode.Window, 10, 20);
+            _cbDisplayMode.SelectedIndex = 1;
+            GenerateTemplatePoint();
+            CheckFov(SelectedProjectionMode() == ProjectionDisplayMode.WindowFit &&
+                !current.AutoScreenPosition && current.X < 650 && current.Y < 420,
+                "changing window scaling fits within the window and disables screen tracking");
+            _cfg.SaveToDisk();
+            CheckFov(AppSettings.Load().Items[0].DisplayMode == ProjectionDisplayMode.WindowFit,
+                "window plus black bars survives settings reload");
         }
 
         private void DisposeFovFixture()
@@ -209,7 +314,7 @@ namespace ScreenCrosshair
             CheckProjectionMath();
             using (MainForm form = new MainForm())
             {
-                try { form.CheckFovFlow(output); form.CheckWindowGrabFlow(); }
+                try { form.CheckFovFlow(output); form.CheckAdaptivePosition(); form.CheckWindowGrabFlow(); }
                 finally { form.DisposeFovFixture(); }
             }
         }

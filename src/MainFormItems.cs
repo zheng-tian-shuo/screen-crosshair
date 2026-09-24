@@ -128,6 +128,7 @@ namespace ScreenCrosshair
             if (!string.IsNullOrEmpty(it.ScreenName) && it.ScreenName != sc.DeviceName)
                 it.ScreenName = sc.DeviceName;
             it.Centered = false;
+            it.AutoScreenPosition = false;
             it.X = p.X - sc.Bounds.Left;
             it.Y = p.Y - sc.Bounds.Top;
 
@@ -178,6 +179,7 @@ namespace ScreenCrosshair
             CrosshairItemSettings it = Cur();
             if (it == null) return;
             it.Centered = true;
+            it.AutoScreenPosition = false;
             AfterEdit();
         }
 

@@ -17,7 +17,8 @@ namespace ScreenCrosshair
         private TextBox _tbTargetWidth, _tbTargetHeight;
         private TextBox _tbTargetAspect;
         private TextBox _tbWindowX, _tbWindowY;
-        private ComboBox _cbDisplayMode;
+        private ComboBox _cbProjectionArea, _cbDisplayMode;
+        private bool _xyDirtyX, _xyDirtyY;
         private Label _lblFovResult, _lblFovHint, _lblTargetSize;
         private bool _syncingFov;
 
@@ -42,6 +43,8 @@ namespace ScreenCrosshair
             _tbY.Leave += XyCommit;
             _tbX.KeyDown += XyKey;
             _tbY.KeyDown += XyKey;
+            _tbX.TextChanged += delegate { _xyDirtyX = !_loading; };
+            _tbY.TextChanged += delegate { _xyDirtyY = !_loading; };
 
             FlatBtn apply = new FlatBtn();
             apply.Text = "应用坐标";
@@ -141,10 +144,13 @@ namespace ScreenCrosshair
             currentSize.Click += delegate { SetTargetResolutionFromScreen(); };
             c4.Controls.Add(currentSize);
 
-            Ui.L(c4, "显示方式", Theme.Body, Theme.TextMuted, 14, 144, 72, 20);
-            _cbDisplayMode = Ui.Combo(c4, 96, 141, 272);
+            Ui.L(c4, "显示区域", Theme.Body, Theme.TextMuted, 14, 144, 72, 20);
+            _cbProjectionArea = Ui.Combo(c4, 96, 141, 150);
+            _cbProjectionArea.Items.AddRange(new object[] { "整屏（含无边框）", "普通窗口" });
+            _cbProjectionArea.SelectedIndex = 0;
+            _cbDisplayMode = Ui.Combo(c4, 260, 141, 180);
             _cbDisplayMode.Items.AddRange(new object[] {
-                "全屏拉伸", "保持比例（黑边）", "窗口（自动识别 / 手填）" });
+                "拉伸铺满", "保持比例（黑边）" });
             _cbDisplayMode.SelectedIndex = 0;
             Ui.L(c4, "窗口左上角", Theme.Body, Theme.TextMuted, 14, 178, 76, 20);
             Ui.L(c4, "X", Theme.Body, Theme.TextMuted, 96, 178, 18, 20);
@@ -175,6 +181,7 @@ namespace ScreenCrosshair
                 _tbTargetHeight, _tbTargetAspect, _tbWindowX, _tbWindowY })
                 box.TextChanged += FovInputChanged;
             _cbDisplayMode.SelectedIndexChanged += FovInputChanged;
+            _cbProjectionArea.SelectedIndexChanged += FovInputChanged;
             UpdateFovModeUi();
         }
 
@@ -232,7 +239,7 @@ namespace ScreenCrosshair
                 }
                 _tbTargetWidth.Text = size.Width.ToString();
                 _tbTargetHeight.Text = size.Height.ToString();
-                _cbDisplayMode.SelectedIndex = (int)it.DisplayMode;
+                SetProjectionMode(it.DisplayMode);
                 _tbWindowX.Text = it.WindowOriginX.ToString();
                 _tbWindowY.Text = it.WindowOriginY.ToString();
             }
@@ -241,16 +248,30 @@ namespace ScreenCrosshair
             ResetFovResult();
         }
 
+        private ProjectionDisplayMode SelectedProjectionMode()
+        {
+            bool fit = _cbDisplayMode.SelectedIndex == 1;
+            return _cbProjectionArea.SelectedIndex == 1
+                ? (fit ? ProjectionDisplayMode.WindowFit : ProjectionDisplayMode.Window)
+                : (fit ? ProjectionDisplayMode.Fit : ProjectionDisplayMode.Stretch);
+        }
+
+        private void SetProjectionMode(ProjectionDisplayMode mode)
+        {
+            _cbProjectionArea.SelectedIndex = ProjectionMath.IsWindow(mode) ? 1 : 0;
+            _cbDisplayMode.SelectedIndex = ProjectionMath.KeepsAspect(mode) ? 1 : 0;
+        }
+
         private void UpdateFovModeUi()
         {
-            bool window = _cbDisplayMode.SelectedIndex == (int)ProjectionDisplayMode.Window;
+            bool window = ProjectionMath.IsWindow(SelectedProjectionMode());
             _tbWindowX.Enabled = _tbWindowY.Enabled = window;
             _lblTargetSize.Text = window ? "画面大小" : "目标分辨率";
             _lblFovHint.Text = window
-                ? "点击「识别游戏窗口」后切到游戏，3 秒后自动填写。\n不含标题栏和边框；移动或缩放窗口后请重新识别。"
-                : (_cbDisplayMode.SelectedIndex == (int)ProjectionDisplayMode.Fit
-                    ? "按所填宽高比居中显示，自动扣除上下或左右黑边。"
-                    : "游戏画面拉伸并铺满目标屏幕时使用。\n有黑边请选择「保持比例」，窗口模式可点右侧识别。");
+                ? "识别后 3 秒内切到游戏，自动读取窗口内部区域。\n保持比例会扣除黑边；移动或缩放后请重新识别并生成。"
+                : (ProjectionMath.KeepsAspect(SelectedProjectionMode())
+                    ? "按所填宽高比扣除上下或左右黑边。\n点击生成后，准星会随屏幕分辨率变化自动重算。"
+                    : "画面铺满屏幕时使用；有黑边请选择「保持比例」。\n点击生成后，准星会随屏幕分辨率变化自动重算。");
         }
 
         private void FovInputChanged(object sender, EventArgs e)
@@ -275,8 +296,7 @@ namespace ScreenCrosshair
                 it.TargetWidth = width;
                 it.TargetHeight = height;
             }
-            if (_cbDisplayMode.SelectedIndex >= 0)
-                it.DisplayMode = (ProjectionDisplayMode)_cbDisplayMode.SelectedIndex;
+            it.DisplayMode = SelectedProjectionMode();
             if (TryWindowOrigin(out x, out y))
             {
                 it.WindowOriginX = x;
@@ -334,9 +354,9 @@ namespace ScreenCrosshair
             Screen screen = ScreenOf(it);
             if (screen == null) screen = Screen.PrimaryScreen;
             if (screen == null) { FovFailure("无法识别当前屏幕"); return; }
-            ProjectionDisplayMode mode = (ProjectionDisplayMode)_cbDisplayMode.SelectedIndex;
+            ProjectionDisplayMode mode = SelectedProjectionMode();
             int originX = 0, originY = 0;
-            if (mode == ProjectionDisplayMode.Window && !TryWindowOrigin(out originX, out originY))
+            if (ProjectionMath.IsWindow(mode) && !TryWindowOrigin(out originX, out originY))
             {
                 FovFailure("窗口左上角要填 0 到 32767 之间的整数");
                 return;
@@ -359,6 +379,13 @@ namespace ScreenCrosshair
             it.Centered = false;
             it.X = generated.X;
             it.Y = generated.Y;
+            it.AutoScreenPosition = !ProjectionMath.IsWindow(mode);
+            if (it.AutoScreenPosition)
+            {
+                it.AppliedFov = targetFov;
+                it.AppliedAspect = aspect;
+                it.AppliedDisplayMode = mode;
+            }
             AfterEdit();
             _lblFovResult.Text = "\u5df2\u751f\u6210 X " + generated.X + "\uff0cY " + generated.Y;
             _lblFovResult.ForeColor = Theme.Green;
@@ -382,6 +409,7 @@ namespace ScreenCrosshair
             }
             it.X += d.X;
             it.Y += d.Y;
+            it.AutoScreenPosition = false;
             AfterEdit();
         }
 
@@ -400,9 +428,12 @@ namespace ScreenCrosshair
             if (_loading) return;
             CrosshairItemSettings it = Cur();
             if (it == null) return;
-            it.X = ParseInt(_tbX, it.X, -32768, 32767);
-            it.Y = ParseInt(_tbY, it.Y, -32768, 32767);
+            if (!_xyDirtyX && !_xyDirtyY) return;
+            if (_xyDirtyX) it.X = ParseInt(_tbX, it.X, -32768, 32767);
+            if (_xyDirtyY) it.Y = ParseInt(_tbY, it.Y, -32768, 32767);
+            _xyDirtyX = _xyDirtyY = false;
             it.Centered = false;
+            it.AutoScreenPosition = false;
             AfterEdit();
         }
 

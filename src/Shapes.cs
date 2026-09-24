@@ -66,6 +66,12 @@ namespace ScreenCrosshair
         public ProjectionDisplayMode DisplayMode = ProjectionDisplayMode.Stretch;
         public int WindowOriginX, WindowOriginY; // game image origin relative to target screen
 
+        // A separate snapshot: edits to the input boxes do not apply a new position.
+        public bool AutoScreenPosition;
+        public double AppliedFov = 90.0;
+        public double AppliedAspect = 16.0 / 9.0;
+        public ProjectionDisplayMode AppliedDisplayMode = ProjectionDisplayMode.Stretch;
+
         // 分划板参数
         public int TickCount;    // 刻度数量
         public int TickSpacing;  // 刻度间距（像素）
@@ -106,6 +112,21 @@ namespace ScreenCrosshair
         public CrosshairItemSettings Clone()
         {
             return (CrosshairItemSettings)MemberwiseClone();
+        }
+
+        public bool RefreshGeneratedPosition(Size screenSize)
+        {
+            if (!AutoScreenPosition || Centered || ProjectionMath.IsWindow(AppliedDisplayMode)) return false;
+            Rectangle viewport;
+            Point point;
+            if (!ProjectionMath.TryGetViewport(screenSize, screenSize, AppliedAspect,
+                AppliedDisplayMode, Point.Empty, out viewport) ||
+                !ProjectionMath.TryConvertHorizontalFov(new Point(953, 975), new Size(1920, 1080),
+                90.0, viewport, AppliedFov, AppliedAspect, out point)) return false;
+            if (X == point.X && Y == point.Y) return false;
+            X = point.X;
+            Y = point.Y;
+            return true;
         }
 
         /// <summary>绘制这个准星需要的画布边长（含发光余量），保证为奇数以有唯一中心像素</summary>

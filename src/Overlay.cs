@@ -14,6 +14,7 @@ namespace ScreenCrosshair
         private CrosshairItemSettings _s;
         private bool _dragMode;
         private bool _updatingBounds;   // 程序自己在挪窗口，别当成用户拖动
+        private bool _movingByUser;
 
         /// <summary>用户手动拖动结束后触发，让设置界面把坐标同步回输入框</summary>
         public event EventHandler PositionChangedByUser;
@@ -57,6 +58,8 @@ namespace ScreenCrosshair
 
         protected override void WndProc(ref Message m)
         {
+            if (m.Msg == Native.WM_ENTERSIZEMOVE) _movingByUser = _dragMode;
+            if (m.Msg == Native.WM_EXITSIZEMOVE) _movingByUser = false;
             if (m.Msg == Native.WM_NCHITTEST)
             {
                 m.Result = (IntPtr)(_dragMode ? Native.HTCAPTION : Native.HTTRANSPARENT);
@@ -68,11 +71,12 @@ namespace ScreenCrosshair
         protected override void OnLocationChanged(EventArgs e)
         {
             base.OnLocationChanged(e);
-            if (_updatingBounds) return;
+            if (_updatingBounds || !_movingByUser) return;
 
             // 走到这里说明是用户拖出来的位移，把中心点换算回目标屏坐标
             Rectangle b = TargetScreen().Bounds;
             _s.Centered = false;
+            _s.AutoScreenPosition = false;
             _s.X = Left + Width / 2 - b.Left;
             _s.Y = Top + Height / 2 - b.Top;
             if (PositionChangedByUser != null) PositionChangedByUser(this, EventArgs.Empty);
@@ -101,9 +105,14 @@ namespace ScreenCrosshair
             Redraw();
         }
 
-        public void RefreshPosition()
+        public bool RefreshPosition()
         {
-            Rectangle b = TargetScreen().Bounds;
+            return RefreshPosition(TargetScreen().Bounds);
+        }
+
+        internal bool RefreshPosition(Rectangle b)
+        {
+            if (_movingByUser) return false;
             int n = _s.CanvasSize();          // 奇数，保证有唯一中心像素
             int cx, cy;
             if (_s.Centered)
@@ -118,10 +127,11 @@ namespace ScreenCrosshair
             }
 
             Rectangle want = new Rectangle(cx - n / 2, cy - n / 2, n, n);
-            if (Bounds == want) return;
+            if (Bounds == want) return false;
             _updatingBounds = true;
             try { Bounds = want; }
             finally { _updatingBounds = false; }
+            return true;
         }
 
         /// <summary>准星该显示在哪块屏。指定了就用指定的，否则跟随鼠标所在屏。</summary>

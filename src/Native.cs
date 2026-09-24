@@ -15,6 +15,9 @@ namespace ScreenCrosshair
 
         public const int WM_HOTKEY = 0x0312;
         public const int WM_NCHITTEST = 0x0084;
+        public const int WM_DISPLAYCHANGE = 0x007E;
+        public const int WM_ENTERSIZEMOVE = 0x0231;
+        public const int WM_EXITSIZEMOVE = 0x0232;
         public const int HTTRANSPARENT = -1;
         public const int HTCAPTION = 2;
 

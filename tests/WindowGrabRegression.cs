@@ -48,6 +48,7 @@ namespace ScreenCrosshair
                     Screen screen = Screen.FromRectangle(expected);
                     _tbFovTarget.Text = "103";
                     _tbTargetAspect.Text = "4:3";
+                    SetProjectionMode(ProjectionDisplayMode.Fit);
                     Point previous = FovPoint();
                     CaptureGameWindow(window);
                     CheckFov(_tbTargetWidth.Text == "640" && _tbTargetHeight.Text == "360" &&
@@ -55,7 +56,7 @@ namespace ScreenCrosshair
                         _tbWindowY.Text == (expected.Top - screen.Bounds.Top).ToString(),
                         "capturing a foreign window fills its actual size and relative origin");
                     CheckFov(Cur().ScreenName == screen.DeviceName && _cbScreen.SelectedIndex > 0 &&
-                        _cbDisplayMode.SelectedIndex == (int)ProjectionDisplayMode.Window,
+                        SelectedProjectionMode() == ProjectionDisplayMode.WindowFit,
                         "capture selects the game monitor and window display mode");
                     CheckFov(_tbFovTarget.Text == "103" && _tbTargetAspect.Text == "4:3" &&
                         FovPoint() == previous && _lblFovResult.ForeColor != Theme.Green,
@@ -65,7 +66,7 @@ namespace ScreenCrosshair
                     CheckFov(loaded.TargetWidth == 640 && loaded.TargetHeight == 360 &&
                         loaded.WindowOriginX == expected.Left - screen.Bounds.Left &&
                         loaded.WindowOriginY == expected.Top - screen.Bounds.Top &&
-                        loaded.ScreenName == screen.DeviceName,
+                        loaded.ScreenName == screen.DeviceName && loaded.DisplayMode == ProjectionDisplayMode.WindowFit,
                         "captured window dimensions, origin and monitor are persisted");
                     string snapshot = string.Join("\n", _cfg.BuildLines().ToArray());
                     CaptureGameWindow(Handle);

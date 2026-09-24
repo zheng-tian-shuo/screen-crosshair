@@ -4,10 +4,20 @@ using System.Globalization;
 
 namespace ScreenCrosshair
 {
-    public enum ProjectionDisplayMode { Stretch, Fit, Window }
+    public enum ProjectionDisplayMode { Stretch, Fit, Window, WindowFit }
 
     public static class ProjectionMath
     {
+        public static bool IsWindow(ProjectionDisplayMode mode)
+        {
+            return mode == ProjectionDisplayMode.Window || mode == ProjectionDisplayMode.WindowFit;
+        }
+
+        public static bool KeepsAspect(ProjectionDisplayMode mode)
+        {
+            return mode == ProjectionDisplayMode.Fit || mode == ProjectionDisplayMode.WindowFit;
+        }
+
         public static bool TryAspectRatio(string text, out double ratio)
         {
             ratio = 0;
@@ -73,24 +83,24 @@ namespace ScreenCrosshair
             viewport = Rectangle.Empty;
             if (screenSize.Width < 2 || screenSize.Height < 2 ||
                 targetSize.Width < 2 || targetSize.Height < 2 ||
-                !(aspect > 0.1 && aspect < 10.0)) return false;
+                !(aspect > 0.1 && aspect < 10.0) ||
+                mode < ProjectionDisplayMode.Stretch || mode > ProjectionDisplayMode.WindowFit) return false;
             Rectangle screen = new Rectangle(Point.Empty, screenSize);
-            if (mode == ProjectionDisplayMode.Stretch) viewport = screen;
-            else if (mode == ProjectionDisplayMode.Fit)
+            Rectangle area = IsWindow(mode) ? new Rectangle(windowOrigin, targetSize) : screen;
+            if (!screen.Contains(area)) return false;
+            viewport = area;
+            if (KeepsAspect(mode))
             {
-                int width = screenSize.Width;
+                int width = area.Width;
                 int height = (int)Math.Round(width / aspect);
-                if (height > screenSize.Height)
+                if (height > area.Height)
                 {
-                    height = screenSize.Height;
+                    height = area.Height;
                     width = (int)Math.Round(height * aspect);
                 }
-                viewport = new Rectangle((screenSize.Width - width) / 2,
-                    (screenSize.Height - height) / 2, width, height);
+                viewport = new Rectangle(area.Left + (area.Width - width) / 2,
+                    area.Top + (area.Height - height) / 2, width, height);
             }
-            else if (mode == ProjectionDisplayMode.Window)
-                viewport = new Rectangle(windowOrigin, targetSize);
-            else return false;
             return viewport.Width >= 2 && viewport.Height >= 2 && screen.Contains(viewport);
         }
 

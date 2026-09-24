@@ -59,6 +59,7 @@ namespace ScreenCrosshair
                 it.Opacity = _sOpacity.Value;
                 it.Glow = _chkGlow.Checked;
                 it.Visible = _chkVisible.Checked;
+                if (it.Centered != _chkCentered.Checked) it.AutoScreenPosition = false;
                 it.Centered = _chkCentered.Checked;
 
                 int si = _cbScreen.SelectedIndex;
@@ -128,6 +129,7 @@ namespace ScreenCrosshair
         /// <summary>按全局开关 / 单个开关 / 自动显隐决定谁该出现</summary>
         private void ApplyVisibility()
         {
+            RefreshScreenPositions();
             bool game = GameOk();
             for (int i = 0; i < _ovl.Count; i++)
             {

@@ -12,7 +12,6 @@ namespace ScreenCrosshair
 
         private Timer _tick;
         private string _lastFg = "\x01";
-        private string _lastScreen;
 
         private static readonly int[] HkIds =
             { HkToggle, HkSwitch, HkEvacuation, HkRocket, HkFreeCountdown, HkWeak };
@@ -105,6 +104,8 @@ namespace ScreenCrosshair
                 if (id == HkWeak) { ToggleWeakNetworkFromHotkey(); return; }
             }
             base.WndProc(ref m);
+            if (m.Msg == Native.WM_DISPLAYCHANGE && IsHandleCreated && !IsDisposed)
+                BeginInvoke((MethodInvoker)delegate { if (!IsDisposed) RefreshScreenPositions(); });
         }
 
         private void StartTick()
@@ -128,27 +129,35 @@ namespace ScreenCrosshair
                 }
             }
 
-            bool follow = false;
-            for (int i = 0; i < _ovl.Count; i++)
-            {
-                if (string.IsNullOrEmpty(_ovl[i].Item.ScreenName)) { follow = true; break; }
-            }
-            if (!follow) return;
+            RefreshScreenPositions();
+        }
 
-            try
+        private void RefreshScreenPositions()
+        {
+            if (_cfg == null) return;
+            bool changed = false;
+            foreach (CrosshairItemSettings it in _cfg.Items)
             {
-                Screen s = Screen.FromPoint(Control.MousePosition);
-                if (s.DeviceName == _lastScreen) return;
-                _lastScreen = s.DeviceName;
-                for (int i = 0; i < _ovl.Count; i++)
+                Screen screen = ScreenOf(it);
+                if (screen == null || !it.RefreshGeneratedPosition(screen.Bounds.Size)) continue;
+                changed = true;
+                if (it == Cur() && _tbX != null && _tbY != null)
                 {
-                    OverlayForm f = _ovl[i];
-                    if (!f.Visible || !string.IsNullOrEmpty(f.Item.ScreenName)) continue;
-                    f.RefreshPosition();
-                    f.Redraw();
+                    bool loading = _loading;
+                    _loading = true;
+                    try
+                    {
+                        if (!_tbX.Focused) _tbX.Text = it.X.ToString();
+                        if (!_tbY.Focused) _tbY.Text = it.Y.ToString();
+                    }
+                    finally { _loading = loading; }
+                    if (_lblFovResult != null && _lblFovResult.ForeColor == Theme.Green)
+                        ResetFovResult("已按上次生成参数更新位置");
                 }
             }
-            catch { }
+            if (changed) SaveSoon();
+            foreach (OverlayForm overlay in _ovl)
+                if (overlay.RefreshPosition() && overlay.Visible) overlay.Redraw();
         }
     }
 }

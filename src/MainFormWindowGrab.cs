@@ -94,7 +94,8 @@ namespace ScreenCrosshair
             it.WindowOriginX = relative.X;
             it.WindowOriginY = relative.Y;
             it.ScreenName = screen.DeviceName;
-            it.DisplayMode = ProjectionDisplayMode.Window;
+            it.DisplayMode = ProjectionMath.KeepsAspect(SelectedProjectionMode())
+                ? ProjectionDisplayMode.WindowFit : ProjectionDisplayMode.Window;
             // Fill only the captured fields; retain the user's FOV and aspect input.
             _loading = true;
             try
@@ -103,7 +104,7 @@ namespace ScreenCrosshair
                 _tbTargetHeight.Text = it.TargetHeight.ToString();
                 _tbWindowX.Text = it.WindowOriginX.ToString();
                 _tbWindowY.Text = it.WindowOriginY.ToString();
-                _cbDisplayMode.SelectedIndex = (int)ProjectionDisplayMode.Window;
+                SetProjectionMode(it.DisplayMode);
                 FillScreens();
                 _cbScreen.SelectedIndex = ScreenIndexOf(it.ScreenName);
             }

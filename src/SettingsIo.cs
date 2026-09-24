@@ -32,9 +32,14 @@ namespace ScreenCrosshair
             it.TargetAspect = IniBag.S(d, pre + "TargetAspect", "16:9");
             double aspect;
             if (!ProjectionMath.TryAspectRatio(it.TargetAspect, out aspect)) it.TargetAspect = "16:9";
-            it.DisplayMode = (ProjectionDisplayMode)IniBag.I(d, pre + "DisplayMode", 0, 0, 2);
+            it.DisplayMode = (ProjectionDisplayMode)IniBag.I(d, pre + "DisplayMode", 0, 0, 3);
             it.WindowOriginX = IniBag.I(d, pre + "WindowOriginX", 0, 0, 32767);
             it.WindowOriginY = IniBag.I(d, pre + "WindowOriginY", 0, 0, 32767);
+            it.AppliedFov = IniBag.D(d, pre + "AppliedFov", 90.0, 1.0, 179.0);
+            it.AppliedAspect = IniBag.D(d, pre + "AppliedAspect", 16.0 / 9.0, 0.1, 10.0);
+            it.AppliedDisplayMode = (ProjectionDisplayMode)IniBag.I(d, pre + "AppliedDisplayMode", 0, 0, 1);
+            it.AutoScreenPosition = IniBag.B(d, pre + "AutoScreenPosition", false) && !it.Centered &&
+                it.AppliedFov > 1 && it.AppliedFov < 179 && it.AppliedAspect > 0.1 && it.AppliedAspect < 10;
             it.FovReferenceSet = IniBag.B(d, pre + "FovReferenceSet", false);
             it.FovReference = IniBag.D(d, pre + "FovReference", 90.0, 1.0, 179.0);
             it.FovReferenceX = IniBag.I(d, pre + "FovReferenceX", 0, -32768, 32767);
@@ -222,6 +227,10 @@ namespace ScreenCrosshair
             L.Add(pre + "DisplayMode=" + (int)it.DisplayMode);
             L.Add(pre + "WindowOriginX=" + it.WindowOriginX);
             L.Add(pre + "WindowOriginY=" + it.WindowOriginY);
+            L.Add(pre + "AutoScreenPosition=" + (it.AutoScreenPosition ? "1" : "0"));
+            L.Add(pre + "AppliedFov=" + it.AppliedFov.ToString("R", CultureInfo.InvariantCulture));
+            L.Add(pre + "AppliedAspect=" + it.AppliedAspect.ToString("R", CultureInfo.InvariantCulture));
+            L.Add(pre + "AppliedDisplayMode=" + (int)it.AppliedDisplayMode);
             // Keep custom ticks when temporarily using another shape.
             {
                 L.Add(pre + "TickCount=" + it.TickCount);
