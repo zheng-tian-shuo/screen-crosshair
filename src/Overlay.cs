@@ -105,6 +105,11 @@ namespace ScreenCrosshair
             Redraw();
         }
 
+        internal void SetItem(CrosshairItemSettings s)
+        {
+            _s = s;
+        }
+
         public bool RefreshPosition()
         {
             return RefreshPosition(TargetScreen().Bounds);

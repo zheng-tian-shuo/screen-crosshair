@@ -29,7 +29,7 @@ namespace ScreenCrosshair
         private Label _vHudOpacity;
         private Chk _chkHudPlate, _chkHudMarkers;
         private HudPreviewBox _hudPreview;
-        private readonly DateTime[] _countdownEndedUntil = new DateTime[3];
+        private readonly double[] _countdownEndedUntil = new double[3];
 
         private void BuildPageCountdown()
         {
@@ -350,7 +350,7 @@ namespace ScreenCrosshair
                 _btnCountdownDrag.Invalidate();
                 _cfg.Save();
                 UpdateCountdownOverlay();
-                Toast("倒计时位置已应用，退出时保存");
+                Toast("倒计时位置已应用，将自动保存");
             }
         }
 
@@ -409,7 +409,7 @@ namespace ScreenCrosshair
                 _btnClockDrag.Invalidate();
                 _cfg.Save();
                 UpdateClockOverlay();
-                Toast("时间位置已应用，退出时保存");
+                Toast("时间位置已应用，将自动保存");
             }
         }
 
@@ -467,9 +467,9 @@ namespace ScreenCrosshair
             if (_countdownDragMode) ToggleCountdownDrag();
             int seconds = index == 0 ? 300 : (index == 1 ? 270 : _cfg.FreeCountdownSeconds);
             if (seconds < 1) seconds = 1;
-            _countdownEnds[index] = DateTime.UtcNow.AddSeconds(seconds);
+            _countdownEnds[index] = MonotonicTime.Seconds + seconds;
             _countdownRunning[index] = true;
-            _countdownEndedUntil[index] = DateTime.MinValue;
+            _countdownEndedUntil[index] = 0;
             _countdownScreen = FindScreen(_cfg.CountdownScreenName);
             if (_countdownScreen == null) try { _countdownScreen = Screen.FromPoint(Control.MousePosition); }
             catch { _countdownScreen = Screen.PrimaryScreen; }
@@ -481,7 +481,7 @@ namespace ScreenCrosshair
             for (int i = 0; i < _countdownRunning.Length; i++)
             {
                 _countdownRunning[i] = false;
-                _countdownEndedUntil[i] = DateTime.MinValue;
+                _countdownEndedUntil[i] = 0;
             }
             UpdateCountdownOverlay();
         }
@@ -490,14 +490,14 @@ namespace ScreenCrosshair
         {
             bool any = false;
             bool ended = false;
-            DateTime now = DateTime.UtcNow;
+            double now = MonotonicTime.Seconds;
             for (int i = 0; i < _countdownRunning.Length; i++)
             {
                 if (!_countdownRunning[i]) continue;
                 if (_countdownEnds[i] <= now)
                 {
                     _countdownRunning[i] = false;
-                    _countdownEndedUntil[i] = now.AddSeconds(1);
+                    _countdownEndedUntil[i] = now + 1;
                     ended = true;
                     Toast(CountdownName(i) + "已结束");
                 }
@@ -532,12 +532,12 @@ namespace ScreenCrosshair
             }
 
             List<CountdownDisplay> items = new List<CountdownDisplay>();
-            DateTime now = DateTime.UtcNow;
+            double now = MonotonicTime.Seconds;
             for (int i = 0; i < _countdownRunning.Length; i++)
             {
                 if (_countdownRunning[i])
                 {
-                    int left = (int)Math.Ceiling((_countdownEnds[i] - now).TotalSeconds);
+                    int left = MonotonicTime.Remaining(_countdownEnds[i], now);
                     if (left < 1) left = 1;
                     items.Add(new CountdownDisplay { Name = CountdownName(i), RemainingSeconds = left });
                 }
@@ -603,10 +603,5 @@ namespace ScreenCrosshair
             return "自由";
         }
 
-        private static int CountdownRemaining(DateTime end)
-        {
-            int left = (int)Math.Ceiling((end - DateTime.UtcNow).TotalSeconds);
-            return left < 0 ? 0 : left;
-        }
     }
 }

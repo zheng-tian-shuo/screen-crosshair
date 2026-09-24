@@ -6,6 +6,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
+using System.Threading;
 
 namespace ScreenCrosshair
 {
@@ -70,8 +71,7 @@ namespace ScreenCrosshair
                 "if (Get-NetQosPolicy -Name $n -PolicyStore ActiveStore -ErrorAction SilentlyContinue) {'QOS|OK'} else {'QOS|MISSING'}" +
                 "} catch {'QOS|ERR|' + $_.Exception.Message};";
             if (useMtu)
-                script += "$r=Get-NetIPInterface -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object {$_.ConnectionState -eq 'Connected' -and $_.InterfaceIndex -ne 1};" +
-                    "foreach($i in $r){if($i.NlMtu -gt " + profile.Mtu + "){$old=$i.NlMtu;try {Set-NetIPInterface -InterfaceIndex $i.InterfaceIndex -AddressFamily IPv4 -NlMtuBytes " + profile.Mtu + " -PolicyStore ActiveStore -ErrorAction Stop;$now=Get-NetIPInterface -InterfaceIndex $i.InterfaceIndex -AddressFamily IPv4 -PolicyStore ActiveStore -ErrorAction Stop;if(!$now -or $now.NlMtu -ne " + profile.Mtu + "){throw 'MTU verification failed'};'MTU|'+$i.InterfaceIndex+'|'+$old} catch {'MTUERR|'+$i.InterfaceIndex+'|'+$_.Exception.Message}}}";
+                script += BuildMtuScript(profile.Mtu, WeakRecoveryStore.Path);
             bool started = RunPowerShell(script, out output);
             bool qosOk = started && output.IndexOf("QOS|OK", StringComparison.Ordinal) >= 0;
             lines.Add(qosOk
@@ -115,12 +115,32 @@ namespace ScreenCrosshair
             if (!qosOk && mtuRecords.Length > 0)
                 lines.Add("部分成功：QoS 限速未启用，但 MTU 已调整；关闭弱网时仍会尝试恢复。");
 
+            bool appliedAny = mtuRecords.Length > 0;
+            try { mtuRecords = WeakRecoveryStore.ReadRecords(mtuRecords); }
+            catch (Exception ex) { lines.Add("恢复记录读取失败，关闭时将重试：" + ex.Message); }
             log = string.Join(Environment.NewLine, lines.ToArray());
-            return qosOk || mtuRecords.Length > 0;
+            return qosOk || appliedAny;
+        }
+
+        internal static string BuildMtuScript(int mtu, string journalPath)
+        {
+            string target = mtu.ToString(CultureInfo.InvariantCulture);
+            return "try {$r=@(Get-NetIPInterface -AddressFamily IPv4 -PolicyStore ActiveStore -ErrorAction Stop | " +
+                "Where-Object {$_.ConnectionState -eq 'Connected' -and $_.InterfaceIndex -ne 1 -and $_.NlMtu -gt " + target + "});" +
+                "$records=@($r | ForEach-Object {''+$_.InterfaceIndex+'|'+$_.NlMtu+'|" + target + "'});" +
+                "[IO.File]::WriteAllText('" + journalPath.Replace("'", "''") + "',($records -join ';'),[Text.Encoding]::UTF8);" +
+                "foreach($i in $r){$old=$i.NlMtu;try {" +
+                "Set-NetIPInterface -InterfaceIndex $i.InterfaceIndex -AddressFamily IPv4 -NlMtuBytes " + target + " -PolicyStore ActiveStore -ErrorAction Stop;" +
+                "$now=Get-NetIPInterface -InterfaceIndex $i.InterfaceIndex -AddressFamily IPv4 -PolicyStore ActiveStore -ErrorAction Stop;" +
+                "if(!$now -or $now.NlMtu -ne " + target + "){throw 'MTU verification failed'};" +
+                "'MTU|'+$i.InterfaceIndex+'|'+$old} catch {'MTUERR|'+$i.InterfaceIndex+'|'+$_.Exception.Message}}" +
+                "} catch {'MTUERR|'+$_.Exception.Message};";
         }
 
         internal static bool Restore(string policyName, string mtuRecords, out string log)
         {
+            try { mtuRecords = WeakRecoveryStore.ReadRecords(mtuRecords); }
+            catch (Exception ex) { log = "无法读取恢复记录：" + ex.Message; return false; }
             string output;
             bool ran = RunPowerShell(BuildRestoreScript(policyName, mtuRecords), out output);
             bool ok = ran && Array.IndexOf(output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), "RESTORE|OK") >= 0;
@@ -129,6 +149,11 @@ namespace ScreenCrosshair
                 : "网络尚未完全恢复，请再次点击关闭并还原。\n" + Short(output);
             if (!ok && conflict)
                 log = "检测到网卡 MTU 在弱网期间被外部修改，软件未覆盖这些改动。\n" + Short(output);
+            if (ok)
+            {
+                try { WeakRecoveryStore.Clear(); }
+                catch (Exception ex) { log = "网络已还原，但恢复记录尚未清理：" + ex.Message; return false; }
+            }
             return ok;
         }
 
@@ -151,8 +176,9 @@ namespace ScreenCrosshair
                 {
                     string[] part = all[i].Split('|');
                     int index, mtu, applied = 0;
-                    bool hasApplied = part.Length >= 3 && int.TryParse(part[2], out applied) && applied > 0;
-                    if ((part.Length != 2 && part.Length < 3) || !int.TryParse(part[0], out index) || !int.TryParse(part[1], out mtu) || index <= 0 || mtu <= 0)
+                    bool hasApplied = part.Length == 3 && int.TryParse(part[2], out applied) && applied > 0;
+                    if ((part.Length != 2 && part.Length != 3) || (part.Length == 3 && !hasApplied) ||
+                        !int.TryParse(part[0], out index) || !int.TryParse(part[1], out mtu) || index <= 0 || mtu <= 0)
                     {
                         script.Append("$ok=$false; 'MTUERR|Invalid recovery record';");
                         continue;
@@ -163,7 +189,8 @@ namespace ScreenCrosshair
                         script.Append("$i=Get-NetIPInterface -InterfaceIndex ").Append(index)
                             .Append(" -AddressFamily IPv4 -PolicyStore ActiveStore -ErrorAction Stop;")
                             .Append("if (!$i) {throw 'Interface not found'};")
-                            .Append("if ($i.NlMtu -ne ").Append(applied).Append(") {$ok=$false; 'MTUSKIP|'+").Append(index).Append("+'|'+$i.NlMtu+'|'+").Append(applied).Append("} else {");
+                            .Append("if ($i.NlMtu -eq ").Append(mtu).Append(") {} elseif ($i.NlMtu -ne ")
+                            .Append(applied).Append(") {$ok=$false; 'MTUSKIP|'+").Append(index).Append("+'|'+$i.NlMtu+'|'+").Append(applied).Append("} else {");
                     }
                     script.Append("Set-NetIPInterface -InterfaceIndex ").Append(index)
                         .Append(" -AddressFamily IPv4 -NlMtuBytes ").Append(mtu)
@@ -190,26 +217,74 @@ namespace ScreenCrosshair
 
         private static bool RunPowerShell(string script, out string output)
         {
-            output = "";
-            try
+            ProcessStartInfo psi = new ProcessStartInfo("powershell.exe");
+            psi.Arguments = "-NoProfile -NonInteractive -EncodedCommand " +
+                Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+            return RunProcess(psi, 30000, out output);
+        }
+
+        internal static bool RunProcess(ProcessStartInfo psi, int timeoutMs, out string output)
+        {
+            StringBuilder captured = new StringBuilder();
+            object gate = new object();
+            bool accepting = true;
+            using (ManualResetEvent stdoutDone = new ManualResetEvent(false))
+            using (ManualResetEvent stderrDone = new ManualResetEvent(false))
+            using (Process p = new Process())
             {
-                ProcessStartInfo psi = new ProcessStartInfo();
-                psi.FileName = "powershell.exe";
-                psi.Arguments = "-NoProfile -NonInteractive -Command \"" + script.Replace("\"", "\\\"") + "\"";
-                psi.CreateNoWindow = true;
-                psi.UseShellExecute = false;
-                psi.RedirectStandardOutput = true;
-                psi.RedirectStandardError = true;
-                using (Process p = Process.Start(psi))
+                try
                 {
-                    string stdout = p.StandardOutput.ReadToEnd();
-                    string stderr = p.StandardError.ReadToEnd();
-                    if (!p.WaitForExit(30000)) { try { p.Kill(); } catch { } return false; }
-                    output = (stdout + " " + stderr).Trim();
-                    return p.ExitCode == 0;
+                    psi.CreateNoWindow = true;
+                    psi.UseShellExecute = false;
+                    psi.RedirectStandardOutput = true;
+                    psi.RedirectStandardError = true;
+                    p.StartInfo = psi;
+                    p.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e)
+                    {
+                        lock (gate)
+                        {
+                            if (!accepting) return;
+                            if (e.Data == null) stdoutDone.Set();
+                            else captured.AppendLine(e.Data);
+                        }
+                    };
+                    p.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e)
+                    {
+                        lock (gate)
+                        {
+                            if (!accepting) return;
+                            if (e.Data == null) stderrDone.Set();
+                            else captured.AppendLine(e.Data);
+                        }
+                    };
+                    p.Start();
+                    p.BeginOutputReadLine();
+                    p.BeginErrorReadLine();
+                    bool exited = p.WaitForExit(timeoutMs);
+                    if (!exited)
+                    {
+                        try { p.Kill(); p.WaitForExit(2000); }
+                        catch (Exception ex) { lock (gate) captured.AppendLine(ex.Message); }
+                    }
+                    // Bound stream draining too: inherited pipes must not defeat the timeout.
+                    bool drainedOut = stdoutDone.WaitOne(1000);
+                    bool drainedErr = stderrDone.WaitOne(1000);
+                    lock (gate)
+                    {
+                        if (!exited) captured.AppendLine("操作超时，已请求终止后台命令。");
+                        if (!drainedOut || !drainedErr) captured.AppendLine("后台命令输出未完整结束。");
+                        output = captured.ToString().Trim();
+                    }
+                    return exited && drainedOut && drainedErr && p.ExitCode == 0;
                 }
+                catch (Exception ex)
+                {
+                    try { if (!p.HasExited) p.Kill(); } catch { }
+                    lock (gate) output = captured.ToString() + ex.Message;
+                    return false;
+                }
+                finally { lock (gate) accepting = false; }
             }
-            catch (Exception ex) { output = ex.Message; return false; }
         }
 
         private static string Short(string text)

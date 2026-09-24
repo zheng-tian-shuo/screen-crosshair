@@ -118,6 +118,7 @@ namespace ScreenCrosshair
 
         private void TickCheck(object sender, EventArgs e)
         {
+            _cfg.FlushPendingSave();
             TickCountdowns();
             if (_cfg.AutoHide)
             {
@@ -133,6 +134,13 @@ namespace ScreenCrosshair
         }
 
         private void RefreshScreenPositions()
+        {
+            RefreshGeneratedPositions();
+            foreach (OverlayForm overlay in _ovl)
+                if (overlay.RefreshPosition() && overlay.Visible) overlay.Redraw();
+        }
+
+        private void RefreshGeneratedPositions()
         {
             if (_cfg == null) return;
             bool changed = false;
@@ -156,8 +164,6 @@ namespace ScreenCrosshair
                 }
             }
             if (changed) SaveSoon();
-            foreach (OverlayForm overlay in _ovl)
-                if (overlay.RefreshPosition() && overlay.Visible) overlay.Redraw();
         }
     }
 }

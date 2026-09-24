@@ -16,6 +16,13 @@ namespace ScreenCrosshair
         private FlatBtn _btnWeakOn, _btnWeakOff, _btnWeakGrab;
         private Label _lblWeakState;
         private bool _weakBusy;
+        private volatile bool _weakClosing;
+        private WeakOperationResult _weakResult;
+        private sealed class WeakOperationResult
+        {
+            internal bool Applying, Success, FromHotkey;
+            internal string Policy = "", Records = "", Log = "";
+        }
         // The worker can still be changing Windows networking after the UI starts closing.
         // Cleanup waits for it so a late apply cannot leave an untracked policy behind.
         private readonly ManualResetEvent _weakOperationDone = new ManualResetEvent(true);
@@ -147,19 +154,20 @@ namespace ScreenCrosshair
 
         private bool HasWeakRecoveryState()
         {
-            return _cfg.WeakActive || !string.IsNullOrEmpty(_cfg.WeakPolicyName) || !string.IsNullOrEmpty(_cfg.WeakMtuRecords);
+            return _cfg.WeakActive || !string.IsNullOrEmpty(_cfg.WeakPolicyName) ||
+                !string.IsNullOrEmpty(_cfg.WeakMtuRecords) || WeakRecoveryStore.Exists;
         }
 
-        private void SaveWeakRecoveryState()
+        private bool SaveWeakRecoveryState()
         {
             // Recovery records must survive an unexpected exit, unlike ordinary UI preferences.
             _cfg.Save();
-            _cfg.SaveToDisk();
+            return _cfg.SaveToDisk();
         }
 
         private void StartWeakNetwork(bool fromHotkey)
         {
-            if (_weakBusy || HasWeakRecoveryState()) return;
+            if (_weakClosing || _weakBusy || HasWeakRecoveryState()) return;
             string exe = _tbWeakExe == null ? _cfg.WeakGameExe : _tbWeakExe.Text.Trim();
             if (!WeakNetworkOps.IsSafeExeName(exe))
             {
@@ -183,94 +191,116 @@ namespace ScreenCrosshair
             _cfg.WeakActive = true;
             _cfg.WeakPolicyName = WeakNetworkOps.PolicyName(exe);
             _cfg.WeakMtuRecords = "";
-            SaveWeakRecoveryState();
-            SetWeakBusy(true, "正在开启弱网…");
-            _weakOperationDone.Reset();
-            ThreadPool.QueueUserWorkItem(delegate
+            if (!SaveWeakRecoveryState())
             {
-                string policy, records, log;
-                bool ok = WeakNetworkOps.Apply(exe, level, useMtu, out policy, out records, out log);
-                _weakOperationDone.Set();
-                if (IsDisposed || Disposing || !IsHandleCreated) return;
-                BeginInvoke((MethodInvoker)delegate
-                {
-                    if (ok)
-                    {
-                        _cfg.WeakActive = true;
-                        _cfg.WeakPolicyName = policy;
-                        _cfg.WeakMtuRecords = records;
-                        SaveWeakRecoveryState();
-                        if (!fromHotkey) Toast("弱网已开启");
-                    }
-                    else
-                    {
-                        _cfg.WeakActive = false;
-                        _cfg.WeakPolicyName = "";
-                        _cfg.WeakMtuRecords = "";
-                        SaveWeakRecoveryState();
-                    }
-                    SetWeakBusy(false, ok ? "弱网已开启。\n" + log : "弱网开启失败。\n" + log);
-                });
-            });
+                _cfg.WeakActive = false;
+                _cfg.WeakPolicyName = "";
+                _cfg.Save();
+                UpdateWeakState("无法保存恢复记录，未修改网络。请检查配置目录写入权限。");
+                return;
+            }
+            QueueWeakOperation(delegate
+            {
+                WeakOperationResult result = new WeakOperationResult();
+                result.Success = WeakNetworkOps.Apply(exe, level, useMtu,
+                    out result.Policy, out result.Records, out result.Log);
+                return result;
+            }, true, fromHotkey, "正在开启弱网…");
         }
 
         private void StopWeakNetwork(bool fromHotkey)
         {
-            if (_weakBusy) return;
-            if (!_cfg.WeakActive && string.IsNullOrEmpty(_cfg.WeakPolicyName) && string.IsNullOrEmpty(_cfg.WeakMtuRecords)) return;
-            SetWeakBusy(true, "正在恢复网络…");
-            _weakOperationDone.Reset();
-            ThreadPool.QueueUserWorkItem(delegate
-            {
-                string log;
-                bool ok = WeakNetworkOps.Restore(_cfg.WeakPolicyName, _cfg.WeakMtuRecords, out log);
-                _weakOperationDone.Set();
-                if (IsDisposed || Disposing || !IsHandleCreated) return;
-                BeginInvoke((MethodInvoker)delegate
-                {
-                    if (ok)
-                    {
-                        _cfg.WeakActive = false;
-                        _cfg.WeakPolicyName = "";
-                        _cfg.WeakMtuRecords = "";
-                        SaveWeakRecoveryState();
-                        if (!fromHotkey) Toast("网络已还原");
-                    }
-                    SetWeakBusy(false, ok ? "弱网已关闭。\n" + log : "恢复失败，弱网仍可能生效。\n" + log);
-                });
-            });
+            if (_weakClosing || _weakBusy || !HasWeakRecoveryState()) return;
+            QueueWeakRestore(fromHotkey, "正在恢复网络…");
         }
 
         private void RecoverWeakNetworkOnStart()
         {
-            if (!_cfg.WeakActive && string.IsNullOrEmpty(_cfg.WeakPolicyName) && string.IsNullOrEmpty(_cfg.WeakMtuRecords)) return;
+            if (!HasWeakRecoveryState()) return;
             if (!WeakNetworkOps.IsAdministrator()) return;
-            SetWeakBusy(true, "正在恢复上次残留的弱网状态…");
+            QueueWeakRestore(true, "正在恢复上次残留的弱网状态…");
+        }
+
+        private void QueueWeakRestore(bool fromHotkey, string state)
+        {
+            string policy = _cfg.WeakPolicyName, records = _cfg.WeakMtuRecords;
+            QueueWeakOperation(delegate
+            {
+                WeakOperationResult result = new WeakOperationResult();
+                result.Success = WeakNetworkOps.Restore(policy, records, out result.Log);
+                return result;
+            }, false, fromHotkey, state);
+        }
+
+        private void QueueWeakOperation(Func<WeakOperationResult> work, bool applying, bool fromHotkey, string state)
+        {
+            if (_weakGrabTimer != null) _weakGrabTimer.Stop();
+            if (_btnWeakGrab != null) _btnWeakGrab.Text = "3 秒后抓取前台程序";
+            SetWeakBusy(true, state);
             _weakOperationDone.Reset();
             ThreadPool.QueueUserWorkItem(delegate
             {
-                string log;
-                bool ok = WeakNetworkOps.Restore(_cfg.WeakPolicyName, _cfg.WeakMtuRecords, out log);
-                _weakOperationDone.Set();
-                if (IsDisposed || Disposing || !IsHandleCreated) return;
-                BeginInvoke((MethodInvoker)delegate
+                WeakOperationResult result;
+                try { result = work(); }
+                catch (Exception ex)
                 {
-                    if (ok)
+                    AppLog.Write("弱网操作失败", ex);
+                    result = new WeakOperationResult { Log = ex.Message };
+                }
+                result.Applying = applying;
+                result.FromHotkey = fromHotkey;
+                // Publish all recovery data before signalling. Exit can consume it
+                // directly while the UI thread is blocked, without pumping messages.
+                Interlocked.Exchange(ref _weakResult, result);
+                _weakOperationDone.Set();
+                if (_weakClosing || IsDisposed || Disposing || !IsHandleCreated) return;
+                try
+                {
+                    BeginInvoke((MethodInvoker)delegate
                     {
-                        _cfg.WeakActive = false; _cfg.WeakPolicyName = ""; _cfg.WeakMtuRecords = ""; SaveWeakRecoveryState();
-                        SetWeakBusy(false, "已恢复上次残留的弱网状态。\n" + log);
-                    }
-                    else SetWeakBusy(false, "上次弱网状态恢复失败，请手动关闭并还原。\n" + log);
-                });
+                        if (!_weakClosing && !IsDisposed) CompleteWeakOperation(true);
+                    });
+                }
+                catch (InvalidOperationException) { } // Closing raced with BeginInvoke.
             });
+        }
+
+        private void CompleteWeakOperation(bool updateUi)
+        {
+            WeakOperationResult result = Interlocked.Exchange(ref _weakResult, null);
+            if (result == null) return;
+            if (result.Applying)
+            {
+                // A timeout/failure does not prove nothing changed. Keep the policy
+                // and journal until a verified restore, even if Apply returned false.
+                _cfg.WeakActive = true;
+                if (!string.IsNullOrEmpty(result.Policy)) _cfg.WeakPolicyName = result.Policy;
+                if (!string.IsNullOrEmpty(result.Records)) _cfg.WeakMtuRecords = result.Records;
+            }
+            else if (result.Success)
+            {
+                _cfg.WeakActive = false;
+                _cfg.WeakPolicyName = "";
+                _cfg.WeakMtuRecords = "";
+            }
+            SaveWeakRecoveryState();
+            _weakBusy = false;
+            if (!updateUi) return;
+            string state = result.Applying
+                ? (result.Success ? "弱网已开启。" : "开启未完成，请关闭并还原。")
+                : (result.Success ? "网络已还原。" : "恢复失败，请再次关闭并还原。");
+            SetWeakBusy(false, state + "\n" + result.Log);
+            if (result.Success && !result.FromHotkey) Toast(state);
         }
 
         private void RestoreWeakNetworkOnExit()
         {
-            // Apply/Restore have a 30-second PowerShell timeout. Wait a little longer
-            // before the final synchronous restore so a late Apply cannot win the race.
-            if (_weakBusy) _weakOperationDone.WaitOne(35000);
-            if (!_cfg.WeakActive && string.IsNullOrEmpty(_cfg.WeakPolicyName) && string.IsNullOrEmpty(_cfg.WeakMtuRecords)) return;
+            _weakClosing = true;
+            // Never race another restore against an operation that is still running.
+            // Its prewritten journal remains available to the next instance.
+            if (_weakBusy && !_weakOperationDone.WaitOne(35000)) return;
+            CompleteWeakOperation(false);
+            if (!HasWeakRecoveryState()) return;
             string log;
             bool ok = WeakNetworkOps.Restore(_cfg.WeakPolicyName, _cfg.WeakMtuRecords, out log);
             if (ok)

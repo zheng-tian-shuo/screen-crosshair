@@ -44,7 +44,7 @@ namespace ScreenCrosshair
         private CountdownOverlayForm _countdownOverlay;
         private CountdownOverlayForm _clockOverlay;
         private WeakStatusOverlayForm _weakIndicator;
-        private readonly DateTime[] _countdownEnds = new DateTime[3];
+        private readonly double[] _countdownEnds = new double[3];
         private readonly bool[] _countdownRunning = new bool[3];
         private Screen _countdownScreen;
         private Screen _clockScreen;

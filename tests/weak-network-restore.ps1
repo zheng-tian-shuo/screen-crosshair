@@ -71,3 +71,64 @@ if ($output -contains 'RESTORE|OK') { throw 'External MTU change must not be ove
 if (-not ($output -like 'MTUSKIP|7|1100|576')) { throw "Missing MTUSKIP diagnostic: $output" }
 if ($script:mtus[7] -ne 1100) { throw 'External MTU value was changed' }
 Write-Host 'PASS mtu-conflict-is-preserved'
+
+# A retry must accept adapters restored during a previous partial success.
+$script:mode = 'mtu-fails'
+$script:exists = $false
+$script:mtus = @{7=576;8=576}
+$code = $builder.Invoke($null, @('', '7|1500|576;8|1400|576'))
+$first = @(& ([scriptblock]::Create($code)))
+if ($first -contains 'RESTORE|OK' -or $script:mtus[8] -ne 1400) { throw 'Expected partial restore' }
+$script:mode = 'success'
+$second = @(& ([scriptblock]::Create($code)))
+if ($second -notcontains 'RESTORE|OK' -or $script:mtus[7] -ne 1500) { throw "Retry failed: $second" }
+$third = @(& ([scriptblock]::Create($code)))
+if ($third -notcontains 'RESTORE|OK') { throw 'Repeated restore must be idempotent' }
+Write-Host 'PASS partial restore retry and repeated restore'
+foreach ($invalid in @('7|1500|bad', '7|1500|0', '7|1500|576|extra')) {
+    $script:mtus = @{7=1100}
+    $code = $builder.Invoke($null, @('', $invalid))
+    $output = @(& ([scriptblock]::Create($code)))
+    if ($output -contains 'RESTORE|OK' -or $script:mtus[7] -ne 1100) { throw 'Malformed records must not modify an adapter' }
+}
+Write-Host 'PASS malformed records cannot bypass conflict protection'
+
+$mtuBuilder = $type.GetMethod('BuildMtuScript', [Reflection.BindingFlags]'Static,NonPublic')
+$journal = Join-Path ([IO.Path]::GetTempPath()) ("crosshair-recovery's-" + [Guid]::NewGuid().ToString('N') + '.tmp')
+function Get-NetIPInterface {
+    [CmdletBinding()] param($InterfaceIndex, $AddressFamily, $PolicyStore)
+    if ($InterfaceIndex) {
+        if ($script:verifyFailure -and $InterfaceIndex -eq 7) { throw 'Verification query failed' }
+        [pscustomobject]@{InterfaceIndex=$InterfaceIndex; NlMtu=$script:mtus[[int]$InterfaceIndex]; ConnectionState='Connected'}
+    } else {
+        foreach ($index in @(7,8)) {
+            [pscustomobject]@{InterfaceIndex=$index; NlMtu=$script:mtus[$index]; ConnectionState='Connected'}
+        }
+    }
+}
+function Set-NetIPInterface {
+    [CmdletBinding()] param($InterfaceIndex, $AddressFamily, $NlMtuBytes, $PolicyStore)
+    $script:setCalls++
+    $saved = [IO.File]::ReadAllText($journal)
+    if ($saved -notlike '*7|1500|576*' -or $saved -notlike '*8|1400|576*') { throw 'Missing durable recovery data before mutation' }
+    $script:mtus[[int]$InterfaceIndex] = [int]$NlMtuBytes
+}
+try {
+    $script:mtus = @{7=1500;8=1400}
+    $script:setCalls = 0
+    $script:verifyFailure = $true
+    $code = $mtuBuilder.Invoke($null, @(576, [string]$journal))
+    $output = @(& ([scriptblock]::Create($code)))
+    if ($script:setCalls -ne 2 -or $script:mtus[7] -ne 576 -or -not ($output -like 'MTUERR|7|*')) { throw "Mutation/verification failure fixture failed: $output" }
+    if ([IO.File]::ReadAllText($journal) -notlike '*7|1500|576*') { throw 'Verification failure lost original MTU' }
+    Write-Host 'PASS journal precedes mutations and survives verification failure'
+
+    $script:setCalls = 0
+    $script:mtus = @{7=1500;8=1400}
+    $code = $mtuBuilder.Invoke($null, @(576, [string](Join-Path $journal 'missing/records')))
+    $output = @(& ([scriptblock]::Create($code)))
+    if ($script:setCalls -ne 0 -or -not ($output -like 'MTUERR|*')) { throw 'Unwritable journal must prevent MTU changes' }
+    Write-Host 'PASS unwritable journal prevents network changes'
+} finally {
+    if (Test-Path -LiteralPath $journal) { Remove-Item -LiteralPath $journal -Force }
+}

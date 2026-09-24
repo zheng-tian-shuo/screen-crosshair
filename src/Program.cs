@@ -62,16 +62,29 @@ namespace ScreenCrosshair
 
             if (restartAsAdmin)
             {
-                try
+                bool restarted = RestartWithFallback(delegate(bool elevated)
                 {
                     ProcessStartInfo psi = new ProcessStartInfo(Application.ExecutablePath);
-                    psi.Verb = "runas";
+                    if (elevated) psi.Verb = "runas";
                     psi.UseShellExecute = true;
                     psi.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                    Process.Start(psi);
-                }
-                catch (Exception ex) { AppLog.Write("管理员模式重启失败", ex); }
+                    using (Process process = Process.Start(psi))
+                        if (process == null) throw new InvalidOperationException("无法启动程序");
+                }, delegate(Exception ex) { AppLog.Write("重启失败", ex); });
+                if (!restarted)
+                    MessageBox.Show("重启失败，请重新打开软件。", AppInfo.AppName,
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        internal static bool RestartWithFallback(Action<bool> launch, Action<Exception> log)
+        {
+            try { launch(true); return true; }
+            catch (Exception ex) { log(ex); }
+            // The original instance has released its mutex. Cancelled UAC must not
+            // leave the user without the ordinary, non-elevated application.
+            try { launch(false); return true; }
+            catch (Exception ex) { log(ex); return false; }
         }
 
         private static void OnThreadException(object sender, ThreadExceptionEventArgs e)

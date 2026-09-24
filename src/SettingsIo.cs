@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace ScreenCrosshair
 {
@@ -56,17 +57,33 @@ namespace ScreenCrosshair
         }
 
         private bool _savePending;
+        private long _saveChangedAt;
+        private long _saveStartedAt;
+        private long _saveRetryAt;
 
-        /// <summary>先标记配置已修改，实际写盘统一放到程序退出时。</summary>
+        /// <summary>合并连续修改，由 UI 定时器延迟写盘，退出时再次刷新。</summary>
         public void Save()
         {
+            long now = Stopwatch.GetTimestamp();
+            if (!_savePending) _saveStartedAt = now;
+            _saveChangedAt = now;
             _savePending = true;
         }
 
-        /// <summary>退出时先写临时文件再替换配置，不生成额外备份文件。</summary>
-        public void SaveToDisk()
+        internal void FlushPendingSave()
         {
-            if (!_savePending) return;
+            long now = Stopwatch.GetTimestamp();
+            if (!_savePending || now < _saveRetryAt) return;
+            // Save after one quiet second, or at least every five seconds while dragging.
+            if (now - _saveChangedAt < Stopwatch.Frequency &&
+                now - _saveStartedAt < 5L * Stopwatch.Frequency) return;
+            if (!SaveToDisk()) _saveRetryAt = now + 5L * Stopwatch.Frequency;
+        }
+
+        /// <summary>先写临时文件再替换配置；失败时保留待保存状态。</summary>
+        public bool SaveToDisk()
+        {
+            if (!_savePending) return true;
             try
             {
                 string path = ConfigPath;
@@ -96,8 +113,10 @@ namespace ScreenCrosshair
                 }
                 else File.Move(tmp, path);
                 _savePending = false;
+                _saveRetryAt = 0;
+                return true;
             }
-            catch (Exception ex) { AppLog.Write("保存配置失败", ex); }
+            catch (Exception ex) { AppLog.Write("保存配置失败", ex); return false; }
         }
 
         public bool ExportTo(string file)
@@ -119,10 +138,12 @@ namespace ScreenCrosshair
             try
             {
                 string[] lines = File.ReadAllLines(file, Encoding.UTF8);
-                ReadFrom(lines);
-                // Import changes the live settings just like editing a field in the UI.
-                // Mark it dirty so closing the app persists the imported configuration.
-                _savePending = true;
+                if (!IsImportable(lines)) return false;
+                AppSettings candidate = new AppSettings();
+                candidate.ReadFrom(lines);
+                // Fully parse and normalize before touching the live settings.
+                ReadFrom(candidate.BuildLines().ToArray());
+                Save();
                 return true;
             }
             catch { return false; }
@@ -132,6 +153,27 @@ namespace ScreenCrosshair
                 WeakPolicyName = weakPolicy;
                 WeakMtuRecords = weakRecords;
             }
+        }
+
+        private static bool IsImportable(string[] lines)
+        {
+            IniBag ini = new IniBag();
+            ini.Load(lines);
+            string raw;
+            int count;
+            if (!ini.Sec("app").TryGetValue("ProfileCount", out raw) ||
+                !int.TryParse(raw, out count) || count < 1 || count > 64) return false;
+            for (int i = 0; i < count; i++)
+            {
+                if (!ini.Has("profile" + i)) return false;
+                Dictionary<string, string> profile = ini.Sec("profile" + i);
+                int items;
+                if (!profile.TryGetValue("Count", out raw) || !int.TryParse(raw, out items) ||
+                    items < 1 || items > 32) return false;
+                for (int j = 0; j < items; j++)
+                    if (!profile.ContainsKey(j + ".Shape") && !profile.ContainsKey(j + ".Size")) return false;
+            }
+            return true;
         }
 
         public List<string> BuildLines()

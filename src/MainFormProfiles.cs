@@ -153,7 +153,7 @@ namespace ScreenCrosshair
                     Toast("请先关闭并还原弱网，再导入配置");
                     return;
                 }
-                if (!_cfg.ImportFrom(d.FileName)) { Toast("导入失败，文件读不出来"); return; }
+                if (!_cfg.ImportFrom(d.FileName)) { Toast("导入失败，请选择完整有效的准星配置文件"); return; }
                 RebuildOverlays();
                 PushToUi();
                 RegisterHotkeys();

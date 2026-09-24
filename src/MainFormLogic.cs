@@ -102,8 +102,8 @@ namespace ScreenCrosshair
         private void ApplyToOverlays()
         {
             if (_ovl.Count != _cfg.Items.Count) { RebuildOverlays(); return; }
-            for (int i = 0; i < _ovl.Count; i++) _ovl[i].Apply(_cfg.Items[i]);
-            ApplyVisibility();
+            for (int i = 0; i < _ovl.Count; i++) _ovl[i].SetItem(_cfg.Items[i]);
+            UpdateOverlayVisibility(true);
         }
 
         private void RebuildOverlays()
@@ -129,7 +129,12 @@ namespace ScreenCrosshair
         /// <summary>按全局开关 / 单个开关 / 自动显隐决定谁该出现</summary>
         private void ApplyVisibility()
         {
-            RefreshScreenPositions();
+            UpdateOverlayVisibility(false);
+        }
+
+        private void UpdateOverlayVisibility(bool appearanceChanged)
+        {
+            RefreshGeneratedPositions();
             bool game = GameOk();
             for (int i = 0; i < _ovl.Count; i++)
             {
@@ -137,9 +142,15 @@ namespace ScreenCrosshair
                 bool want = _cfg.GlobalVisible && f.Item.Visible && game;
                 if (want)
                 {
-                    f.RefreshPosition();
-                    if (!f.Visible) f.Show();
-                    f.Redraw();
+                    bool moved = f.RefreshPosition();
+                    if (!f.Visible)
+                    {
+                        bool hadHandle = f.IsHandleCreated;
+                        f.Show();
+                        // A newly created handle already draws in OnHandleCreated.
+                        if (hadHandle) f.Redraw();
+                    }
+                    else if (appearanceChanged || moved) f.Redraw();
                 }
                 else if (f.Visible) f.Hide();
             }
@@ -156,7 +167,7 @@ namespace ScreenCrosshair
             return string.Equals(ForegroundExeName(), want, StringComparison.OrdinalIgnoreCase);
         }
 
-        /// <summary>记录配置已修改，实际写盘统一放到程序退出时</summary>
+        /// <summary>标记修改，由定时器合并保存。</summary>
         private void SaveSoon()
         {
             _cfg.Save();
