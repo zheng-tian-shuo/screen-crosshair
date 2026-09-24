@@ -209,7 +209,7 @@ namespace ScreenCrosshair
             CheckProjectionMath();
             using (MainForm form = new MainForm())
             {
-                try { form.CheckFovFlow(output); }
+                try { form.CheckFovFlow(output); form.CheckWindowGrabFlow(); }
                 finally { form.DisposeFovFixture(); }
             }
         }
@@ -218,5 +218,9 @@ namespace ScreenCrosshair
 
 public class FovRegressionEntry
 {
-    [STAThread] public static void Main(string[] args) { ScreenCrosshair.MainForm.RunFovRegression(args[0]); }
+    [STAThread] public static void Main(string[] args)
+    {
+        if (args[0] == "--window-fixture") ScreenCrosshair.WindowGrabFixture.Run(args[1]);
+        else ScreenCrosshair.MainForm.RunFovRegression(args[0]);
+    }
 }

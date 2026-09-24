@@ -39,6 +39,12 @@ namespace ScreenCrosshair
         }
 
         [StructLayout(LayoutKind.Sequential)]
+        public struct RECT
+        {
+            public int left, top, right, bottom;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
         public struct SIZE
         {
             public int cx;
@@ -96,6 +102,24 @@ namespace ScreenCrosshair
 
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        public static extern bool GetClientRect(IntPtr hWnd, out RECT rect);
+
+        [DllImport("user32.dll")]
+        public static extern bool ClientToScreen(IntPtr hWnd, ref POINT point);
+
+        [DllImport("user32.dll")]
+        public static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern bool IsIconic(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetShellWindow();
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetDesktopWindow();
 
         [DllImport("user32.dll")]
         public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);

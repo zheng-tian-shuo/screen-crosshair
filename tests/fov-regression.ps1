@@ -15,7 +15,7 @@ $fixture = Join-Path $temp 'MainForm.cs'
 $csc = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 $output = Join-Path $temp 'FovRegression.exe'
 $files = @(Get-ChildItem (Join-Path $root 'src') -Filter '*.cs' | Where-Object Name -ne 'MainForm.cs' | ForEach-Object FullName)
-& $csc /nologo /target:exe /main:FovRegressionEntry /codepage:65001 /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll "/out:$output" "/win32manifest:$root/build/app.manifest" "/resource:$root/assets/brand.png,brand.png" "/resource:$root/assets/app.ico,app.ico" $fixture (Join-Path $PSScriptRoot 'FovRegression.cs') $files
+& $csc /nologo /target:exe /main:FovRegressionEntry /codepage:65001 /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll "/out:$output" "/win32manifest:$root/build/app.manifest" "/resource:$root/assets/brand.png,brand.png" "/resource:$root/assets/app.ico,app.ico" $fixture (Join-Path $PSScriptRoot 'FovRegression.cs') (Join-Path $PSScriptRoot 'WindowGrabRegression.cs') $files
 if ($LASTEXITCODE -ne 0) { throw 'FOV fixture compilation failed' }
 & $output ([IO.Path]::GetFullPath($OutputDirectory))
 if ($LASTEXITCODE -ne 0) { throw 'FOV regression failed' }

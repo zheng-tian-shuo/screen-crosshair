@@ -144,13 +144,18 @@ namespace ScreenCrosshair
             Ui.L(c4, "显示方式", Theme.Body, Theme.TextMuted, 14, 144, 72, 20);
             _cbDisplayMode = Ui.Combo(c4, 96, 141, 272);
             _cbDisplayMode.Items.AddRange(new object[] {
-                "全屏拉伸", "保持比例（黑边）", "窗口（手填画面区域）" });
+                "全屏拉伸", "保持比例（黑边）", "窗口（自动识别 / 手填）" });
             _cbDisplayMode.SelectedIndex = 0;
             Ui.L(c4, "窗口左上角", Theme.Body, Theme.TextMuted, 14, 178, 76, 20);
             Ui.L(c4, "X", Theme.Body, Theme.TextMuted, 96, 178, 18, 20);
             _tbWindowX = Ui.NumBox(c4, 116, 175, 64);
             Ui.L(c4, "Y", Theme.Body, Theme.TextMuted, 196, 178, 18, 20);
             _tbWindowY = Ui.NumBox(c4, 216, 175, 64);
+            _btnWindowGrab = new FlatBtn();
+            _btnWindowGrab.Text = "识别游戏窗口";
+            _btnWindowGrab.Bounds = new Rectangle(296, 174, 130, 26);
+            _btnWindowGrab.Click += delegate { StartWindowGrab(); };
+            c4.Controls.Add(_btnWindowGrab);
             _lblFovHint = Ui.L(c4, "", Theme.Small, Theme.TextMuted, 14, 210, 426, 36);
 
             FlatBtn convert = new FlatBtn();
@@ -213,6 +218,7 @@ namespace ScreenCrosshair
         private void SyncFovUi(CrosshairItemSettings it)
         {
             if (_tbFovTarget == null || it == null) return;
+            CancelWindowGrab();
             _syncingFov = true;
             try
             {
@@ -241,15 +247,16 @@ namespace ScreenCrosshair
             _tbWindowX.Enabled = _tbWindowY.Enabled = window;
             _lblTargetSize.Text = window ? "画面大小" : "目标分辨率";
             _lblFovHint.Text = window
-                ? "填写游戏画面的实际像素大小和左上角位置（不含边框）。\n左上角相对目标屏幕；移动或缩放窗口后需重新填写。"
+                ? "点击「识别游戏窗口」后切到游戏，3 秒后自动填写。\n不含标题栏和边框；移动或缩放窗口后请重新识别。"
                 : (_cbDisplayMode.SelectedIndex == (int)ProjectionDisplayMode.Fit
                     ? "按所填宽高比居中显示，自动扣除上下或左右黑边。"
-                    : "游戏画面拉伸并铺满目标屏幕时使用。\n有黑边请选择「保持比例」，窗口模式请填写画面区域。");
+                    : "游戏画面拉伸并铺满目标屏幕时使用。\n有黑边请选择「保持比例」，窗口模式可点右侧识别。");
         }
 
         private void FovInputChanged(object sender, EventArgs e)
         {
             if (_loading || _syncingFov) return;
+            CancelWindowGrab();
             UpdateFovModeUi();
             ResetFovResult("参数已修改，请重新生成");
             SaveFovInputs();
@@ -305,6 +312,7 @@ namespace ScreenCrosshair
         {
             CrosshairItemSettings it = Cur();
             if (it == null) return;
+            CancelWindowGrab();
             ResetFovResult();
             double targetFov, aspect;
             if (!TryFov(_tbFovTarget, out targetFov))
